@@ -1,0 +1,52 @@
+
+modLoader="javafml" #mandatory
+
+loaderVersion="[40,)" #mandatory This is typically bumped every Minecraft version by Forge. See our download page for lists of versions.
+
+license="All rights reserved"
+
+[[mods]] #mandatory
+
+modId="labels" #mandatory
+
+version = "${version}"
+
+displayName="Labels" #mandatory
+
+logoFile="icon.png" #optional
+
+credits="MehVahdJukaar, Plantkillable" #optional
+
+authors="MehVahdJukaar" #optional
+
+itemIcon="labels:label" #catalogue icon
+description='''
+Label everything!
+'''
+
+[[dependencies.labels]] #optional
+    # the modid of the dependency
+    modId="forge" #mandatory
+
+    mandatory=true #mandatory
+
+    versionRange="[40,)" #mandatory
+
+    ordering="NONE"
+    side="BOTH"
+# Here's another dependency
+[[dependencies.labels]]
+    modId="minecraft"
+    mandatory=true
+# This version range declares a minimum of the current minecraft version up to but not including the next major version
+    versionRange="[1.19.2,1.20)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.labels]]
+
+    modId="moonlight"
+    mandatory=true
+    versionRange="[1.19.2-2.0.34,]"
+    ordering="AFTER"
+    side="BOTH"
