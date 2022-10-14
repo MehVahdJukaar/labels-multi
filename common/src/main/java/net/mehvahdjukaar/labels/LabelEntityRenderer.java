@@ -3,6 +3,7 @@ package net.mehvahdjukaar.labels;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.datafixers.util.Pair;
 import com.mojang.math.Matrix3f;
 import com.mojang.math.Matrix4f;
 import com.mojang.math.Vector3f;
@@ -10,9 +11,7 @@ import net.mehvahdjukaar.moonlight.api.client.texture_renderer.FrameBufferBacked
 import net.mehvahdjukaar.moonlight.api.client.texture_renderer.RenderedTexturesManager;
 import net.mehvahdjukaar.moonlight.api.client.util.TextUtil;
 import net.mehvahdjukaar.moonlight.api.platform.ClientPlatformHelper;
-import net.mehvahdjukaar.moonlight.api.resources.textures.Palette;
-import net.mehvahdjukaar.moonlight.api.resources.textures.SpriteUtils;
-import net.mehvahdjukaar.moonlight.api.resources.textures.TextureImage;
+import net.mehvahdjukaar.moonlight.api.resources.textures.*;
 import net.mehvahdjukaar.moonlight.api.util.math.colors.HCLColor;
 import net.mehvahdjukaar.moonlight.api.util.math.colors.RGBColor;
 import net.minecraft.client.Minecraft;
@@ -34,6 +33,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
@@ -102,7 +102,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
 
                 poseStack.popPose();
 
-                if(hasText) drawLabelText(poseStack, buffer, entity, entity.getItem().getHoverName());
+                if (hasText) drawLabelText(poseStack, buffer, entity, entity.getItem().getHoverName());
             }
         }
 
@@ -118,62 +118,116 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
 
         boolean reduceColors = ClientConfigs.REDUCE_COLORS.get();
         boolean recolor = ClientConfigs.IS_RECOLORED.get();
+        boolean outline = ClientConfigs.OUTLINE.get() && recolor; //wont even attempt adding an outline if we don't grayscale first
+
+        if (recolor || reduceColors) {
+            //cleans image so we don't have similar colors
+            SpriteUtils.mergeSimilarColors(image, 0.015f);
+        }
 
         if (recolor) SpriteUtils.grayscaleImage(image);
 
+        TextureImage originalTexture = TextureImage.of(image, null);
+        TextureImage outlineTexture; //close this!
+        if (outline) {
+            List<Pair<Integer, Integer>> outlinePosition = new ArrayList<>();
+            outlineTexture = originalTexture.makeCopy();
+            //find edges position
+            SpriteUtils.forEachPixel(outlineTexture.getImage(), (x, y) -> {
+                var c =  outlineTexture.getImage().getPixelRGBA(x,y);
+                if (new RGBColor(c).alpha() != 0) {
+                    if ((x == 0 || new RGBColor(image.getPixelRGBA(x - 1, y)).alpha() == 0) ||
+                            (x == image.getWidth() - 1 || new RGBColor(image.getPixelRGBA(x + 1, y)).alpha() == 0) ||
+                            (y == 0 || new RGBColor(image.getPixelRGBA(x, y - 1)).alpha() == 0) ||
+                            (y == image.getHeight() - 1 || new RGBColor(image.getPixelRGBA(x, y + 1)).alpha() == 0)) {
+                        outlinePosition.add(Pair.of(x, y));
+                        //image.setPixelRGBA(x, y, dark.asRGB().mixWith(new RGBColor(c), 0.2f).toInt());
+                    }
+                }
+            });
+            SpriteUtils.forEachPixel(outlineTexture.getImage(), (x, y) -> {
+              if(!outlinePosition.contains(Pair.of(x,y))){
+                  //remove inner
+                  outlineTexture.getImage().setPixelRGBA(x,y, 0);
+              }else{
+                  //remove edges
+                  originalTexture.getImage().setPixelRGBA(x,y,0);
+              }
+            });
+
+
+        }else{
+            outlineTexture = null;
+        }
+
         if (reduceColors) {
-            int cutoff = 13;
+            //reduce main image colors
+            int cutoff = 11;
             UnaryOperator<Integer> fn = i -> {
                 if (i < cutoff) return i;
                 else return (int) (Math.pow(i - cutoff + 1, 1 / 3f) + cutoff - 1);
             };
-
+            //actually removes colors to have a palette around 13 (same as vanilla item textures)
             SpriteUtils.reduceColors(image, fn);
-        }
+            //here we have a grayscale image with the amount of colors we want. Actual colors arent right yet
 
-        if (!recolor) return;
-
-        HCLColor dark = new RGBColor(ClientConfigs.DARK_COLOR.get()).asHCL();
-        //HCLColor light = new RGBColor(196 / 255f, 155 / 255f, 88 / 255f, 1).asHCL();
-        HCLColor light = new RGBColor(ClientConfigs.LIGHT_COLOR.get()).asHCL();
-
-        //if (true) return;
-
-        TextureImage t = TextureImage.of(image, null);
-        Palette old = Palette.fromImage(t, null, 0);
-        int s = old.size();
-        Palette newPalette;
-        if (s < 3) {
-            newPalette = Palette.ofColors(List.of(light, dark));
-        } else {
-            newPalette = Palette.fromArc(light, dark, s);
-        }
-        boolean outline = ClientConfigs.OUTLINE.get();
-        for (int x = 0; x < image.getWidth(); x++) {
-            for (int y = 0; y < image.getHeight(); y++) {
-                int c = image.getPixelRGBA(x, y);
-                //manual recolor
-                for (int i = 0; i < old.size(); i++) {
-                    if (old.getValues().get(i).value() == c) {
-                        c = newPalette.getValues().get(i).value();
-                        image.setPixelRGBA(x, y, c);
-
-                        break;
-                    }
-                }
-                if(outline) {
-                    if (new RGBColor(c).alpha() != 0) {
-                        if ((x == 0 || new RGBColor(image.getPixelRGBA(x - 1, y)).alpha() == 0) ||
-                                (x == image.getWidth() - 1 || new RGBColor(image.getPixelRGBA(x + 1, y)).alpha() == 0) ||
-                                (y == 0 || new RGBColor(image.getPixelRGBA(x, y - 1)).alpha() == 0) ||
-                                (y == image.getHeight() - 1 || new RGBColor(image.getPixelRGBA(x, y + 1)).alpha() == 0)) {
-                            image.setPixelRGBA(x, y, dark.asRGB().mixWith(new RGBColor(c), 0.2f).toInt());
-                        }
-                    }
-                }
+            //reduce outline colors
+            if(outlineTexture != null) {
+                int maxOutlineColors = 3;
+                SpriteUtils.reduceColors(outlineTexture.getImage(), j->Math.min(j,maxOutlineColors));
             }
         }
-        //r.recolor(p);
+
+        if (recolor) {
+
+            HCLColor dark = new RGBColor(ClientConfigs.DARK_COLOR.get()).asHCL();
+            //HCLColor light = new RGBColor(196 / 255f, 155 / 255f, 88 / 255f, 1).asHCL();
+            HCLColor light = new RGBColor(ClientConfigs.LIGHT_COLOR.get()).asHCL();
+
+            //if (true) return;
+
+            Palette old = Palette.fromImage(originalTexture, null, 0);
+            int s = old.size();
+            Palette newPalette;
+            if (s < 3) {
+                newPalette = Palette.ofColors(List.of(light, dark));
+            } else {
+                newPalette = Palette.fromArc(light, dark, s + (outline ? 2 : 0));
+            }
+
+            if (outline && newPalette.size() > 4) {
+                //split palette to use some colors for outline
+                Palette newOutlinePalette = Palette.ofColors(List.of());
+                newOutlinePalette.add(newPalette.remove(0));
+                newOutlinePalette.add(newPalette.remove(0));
+                newOutlinePalette.add(newPalette.getDarkest()); //they'll have 1 shared color
+                fastInPlaceRecolor(outlineTexture.getImage(), Palette.fromImage(outlineTexture), newOutlinePalette);
+            }
+            fastInPlaceRecolor(image, old, newPalette);
+        }
+
+        if(outlineTexture != null){
+            originalTexture.applyOverlay(outlineTexture);
+            outlineTexture.close();
+        }
+        //original isn't closed as TextureImage just wraps native image so we cant close that
+    }
+
+    //like with respriter but faster as palettes are already same size
+    private static void fastInPlaceRecolor(NativeImage image, Palette old, Palette newPalette) {
+        assert old.size() <= newPalette.size() : "Palettes must have same size";
+        SpriteUtils.forEachPixel(image, (x, y) -> {
+
+            int c = image.getPixelRGBA(x, y);
+            //manual recolor cause faster since we are iterating anyway
+            for (int i = 0; i < old.size(); i++) {
+                if (old.getValues().get(i).value() == c) {
+                    c = newPalette.getValues().get(i).value();
+                    image.setPixelRGBA(x, y, c);
+                    break;
+                }
+            }
+        });
     }
 
     private void drawLabelText(PoseStack matrixStack, MultiBufferSource buffer,

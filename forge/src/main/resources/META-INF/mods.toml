@@ -47,6 +47,6 @@ Label everything!
 
     modId="moonlight"
     mandatory=true
-    versionRange="[1.19.2-2.0.34,]"
+    versionRange="[1.19.2-2.0.35,]"
     ordering="AFTER"
     side="BOTH"

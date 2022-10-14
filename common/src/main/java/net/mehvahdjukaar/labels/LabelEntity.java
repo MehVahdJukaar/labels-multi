@@ -91,11 +91,10 @@ public class LabelEntity extends HangingEntity {
         if (this.level.getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
             this.playSound(SoundEvents.PAINTING_BREAK, 1.0F, 1.0F);
             if (entity instanceof Player player) {
-                if (player.getAbilities().instabuild) {
-                    return;
+                if (!player.getAbilities().instabuild) {
+                    this.spawnAtLocation(LabelsMod.LABEL_ITEM.get());
                 }
             }
-            //this.spawnAtLocation(ModRegistry.LABEL_ITEM.get());
         }
     }
 
@@ -112,7 +111,7 @@ public class LabelEntity extends HangingEntity {
         }
         this.getEntityData().set(DATA_ITEM, stack);
         if (!stack.isEmpty()) {
-            this.playSound(SoundEvents.ITEM_FRAME_ADD_ITEM, 1.0F, 1.0F);
+            this.playSound(SoundEvents.INK_SAC_USE, 1.0F, 1.0F);
         }
     }
 

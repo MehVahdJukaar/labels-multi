@@ -8,11 +8,6 @@
           "type": "minecraft:item",
           "name": "labels:label"
         }
-      ],
-      "conditions": [
-        {
-          "condition": "minecraft:survives_explosion"
-        }
       ]
     }
   ]

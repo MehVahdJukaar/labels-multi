@@ -28,10 +28,11 @@ public class ClientConfigs {
     static {
         ConfigBuilder builder = ConfigBuilder.create(LabelsMod.res("client"), ConfigType.CLIENT);
 
+        builder.push("general");
         HAS_TEXT = builder.comment("Draws item name on labels").define("draw_item_name", false);
         TEXTURE_SIZE = builder.comment("Item texture resolution. You might want to keep this multiples of 16")
-                .define("texture_resolution", 16, 8, 1024);
-
+                .define("texture_resolution", 16, 8, 512);
+        builder.pop();
         builder.push("color_settings");
 
         var dark = new RGBColor(64 / 255f, 34 / 255f, 0 / 255f, 1);
