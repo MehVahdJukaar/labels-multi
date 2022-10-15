@@ -35,9 +35,9 @@ public class ClientConfigs {
         builder.pop();
         builder.push("color_settings");
 
-        var dark = new RGBColor(64 / 255f, 34 / 255f, 0 / 255f, 1);
+        var dark = new RGBColor(76 / 255f, 49 / 255f, 19 / 255f, 1);//new RGBColor(64 / 255f, 34 / 255f, 0 / 255f, 1);
         //HCLColor light = new RGBColor(196 / 255f, 155 / 255f, 88 / 255f, 1).asHCL();
-        var light = new RGBColor(235 / 255f, 213 / 255f, 178 / 255f, 1);
+        var light = new RGBColor(243 / 255f, 224 / 255f, 196 / 255f, 1);// new RGBColor(235 / 255f, 213 / 255f, 178 / 255f, 1);
 
 
         IS_RECOLORED = builder.comment("Greyscales then recolors each item using the below provided colors").define("recolor_texture", true);

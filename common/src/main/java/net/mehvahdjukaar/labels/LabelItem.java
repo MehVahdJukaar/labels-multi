@@ -1,15 +1,19 @@
 package net.mehvahdjukaar.labels;
 
+import dev.architectury.injectables.annotations.PlatformOnly;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.gameevent.GameEvent;
 
 public class LabelItem extends Item {
@@ -44,7 +48,7 @@ public class LabelItem extends Item {
                     level.addFreshEntity(label);
                 }
 
-                itemstack.shrink(1);
+                if(!player.getAbilities().instabuild) itemstack.shrink(1);
                 return InteractionResult.sidedSuccess(level.isClientSide);
             }
         }
@@ -53,5 +57,28 @@ public class LabelItem extends Item {
 
     protected boolean mayPlace(Player pPlayer, Direction pDirection, ItemStack pHangingEntityStack, BlockPos pPos) {
         return !pDirection.getAxis().isVertical() && pPlayer.mayUseItemAt(pPos, pDirection, pHangingEntityStack);
+    }
+
+    @Override
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand usedHand) {
+        return super.use(level, player, usedHand);
+    }
+
+    @PlatformOnly(PlatformOnly.FORGE)
+    public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
+        InteractionResult res;
+        if (context.getPlayer().isCreative()) {
+            int i = stack.getCount();
+            res = stack.useOn(context);
+            stack.setCount(i);
+        } else {
+            res = stack.useOn(context);
+        }
+        return res.consumesAction() ? res : InteractionResult.PASS;
+    }
+
+    @PlatformOnly(PlatformOnly.FORGE)
+    public boolean doesSneakBypassUse(ItemStack stack, LevelReader level, BlockPos pos, Player player) {
+        return true;
     }
 }

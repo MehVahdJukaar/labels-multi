@@ -11,6 +11,7 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
@@ -27,6 +28,7 @@ import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -110,9 +112,6 @@ public class LabelEntity extends HangingEntity {
             stack.setEntityRepresentation(this);
         }
         this.getEntityData().set(DATA_ITEM, stack);
-        if (!stack.isEmpty()) {
-            this.playSound(SoundEvents.INK_SAC_USE, 1.0F, 1.0F);
-        }
     }
 
     public ItemStack getItem() {
@@ -214,16 +213,28 @@ public class LabelEntity extends HangingEntity {
     }
 
     @Override
-    public InteractionResult interact(Player pPlayer, InteractionHand pHand) {
-        ItemStack itemstack = pPlayer.getItemInHand(pHand);
+    public InteractionResult interact(Player player, InteractionHand hand) {
+        ItemStack itemstack = player.getItemInHand(hand);
 
-        if (!itemstack.isEmpty() && !this.isRemoved()) {
+        if (player.isSecondaryUseActive() && !itemstack.isEmpty() && !this.isRemoved()) {
             if (!this.level.isClientSide) {
                 this.setItem(itemstack);
+                if (!itemstack.isEmpty()) {
+                    this.playSound(SoundEvents.INK_SAC_USE, 1.0F, 1.0F);
+                }
             }
-            return InteractionResult.sidedSuccess(pPlayer.level.isClientSide);
+            return InteractionResult.sidedSuccess(player.level.isClientSide);
+        } else {
+            InteractionResult interactionresult;
+            if (player instanceof ServerPlayer sp) {
+                BlockPos p = this.getSupportingBlockPos();
+                interactionresult = sp.gameMode.useItemOn(sp, sp.level, itemstack, hand,
+                        new BlockHitResult(Vec3.atCenterOf(p), this.direction.getOpposite(), p, false));
+                return interactionresult;
+            }else{
+                return InteractionResult.SUCCESS;
+            }
         }
-        return InteractionResult.PASS;
     }
 
     @Override
@@ -251,7 +262,7 @@ public class LabelEntity extends HangingEntity {
     }
 
     public boolean needsVisualUpdate() {
-        if (this.needsVisualRefresh){
+        if (this.needsVisualRefresh) {
             this.needsVisualRefresh = false;
             return true;
         }

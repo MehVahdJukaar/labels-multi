@@ -11,7 +11,9 @@ import net.mehvahdjukaar.moonlight.api.client.texture_renderer.FrameBufferBacked
 import net.mehvahdjukaar.moonlight.api.client.texture_renderer.RenderedTexturesManager;
 import net.mehvahdjukaar.moonlight.api.client.util.TextUtil;
 import net.mehvahdjukaar.moonlight.api.platform.ClientPlatformHelper;
-import net.mehvahdjukaar.moonlight.api.resources.textures.*;
+import net.mehvahdjukaar.moonlight.api.resources.textures.Palette;
+import net.mehvahdjukaar.moonlight.api.resources.textures.SpriteUtils;
+import net.mehvahdjukaar.moonlight.api.resources.textures.TextureImage;
 import net.mehvahdjukaar.moonlight.api.util.math.colors.HCLColor;
 import net.mehvahdjukaar.moonlight.api.util.math.colors.RGBColor;
 import net.minecraft.client.Minecraft;
@@ -134,7 +136,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
             outlineTexture = originalTexture.makeCopy();
             //find edges position
             SpriteUtils.forEachPixel(outlineTexture.getImage(), (x, y) -> {
-                var c =  outlineTexture.getImage().getPixelRGBA(x,y);
+                var c = outlineTexture.getImage().getPixelRGBA(x, y);
                 if (new RGBColor(c).alpha() != 0) {
                     if ((x == 0 || new RGBColor(image.getPixelRGBA(x - 1, y)).alpha() == 0) ||
                             (x == image.getWidth() - 1 || new RGBColor(image.getPixelRGBA(x + 1, y)).alpha() == 0) ||
@@ -146,17 +148,17 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
                 }
             });
             SpriteUtils.forEachPixel(outlineTexture.getImage(), (x, y) -> {
-              if(!outlinePosition.contains(Pair.of(x,y))){
-                  //remove inner
-                  outlineTexture.getImage().setPixelRGBA(x,y, 0);
-              }else{
-                  //remove edges
-                  originalTexture.getImage().setPixelRGBA(x,y,0);
-              }
+                if (!outlinePosition.contains(Pair.of(x, y))) {
+                    //remove inner
+                    outlineTexture.getImage().setPixelRGBA(x, y, 0);
+                } else {
+                    //remove edges
+                    originalTexture.getImage().setPixelRGBA(x, y, 0);
+                }
             });
 
 
-        }else{
+        } else {
             outlineTexture = null;
         }
 
@@ -172,9 +174,9 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
             //here we have a grayscale image with the amount of colors we want. Actual colors arent right yet
 
             //reduce outline colors
-            if(outlineTexture != null) {
+            if (outlineTexture != null) {
                 int maxOutlineColors = 3;
-                SpriteUtils.reduceColors(outlineTexture.getImage(), j->Math.min(j,maxOutlineColors));
+                SpriteUtils.reduceColors(outlineTexture.getImage(), j -> Math.min(j, maxOutlineColors));
             }
         }
 
@@ -195,18 +197,26 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
                 newPalette = Palette.fromArc(light, dark, s + (outline ? 2 : 0));
             }
 
-            if (outline && newPalette.size() > 4) {
-                //split palette to use some colors for outline
-                Palette newOutlinePalette = Palette.ofColors(List.of());
-                newOutlinePalette.add(newPalette.remove(0));
-                newOutlinePalette.add(newPalette.remove(0));
-                newOutlinePalette.add(newPalette.getDarkest()); //they'll have 1 shared color
+            if (outline) {
+                Palette newOutlinePalette;
+                if (newPalette.size() > 4) {
+                    //split palette to use some colors for outline
+                    newOutlinePalette = Palette.ofColors(List.of());
+                    newOutlinePalette.add(newPalette.remove(0));
+                    var v = newPalette.remove(0);
+                    newOutlinePalette.add(v);
+                    newOutlinePalette.add(newPalette.getDarkest()); //they'll have 1 shared color
+                    //newPalette.add(v);
+                } else {
+                    newOutlinePalette = newPalette.copy();
+                    newOutlinePalette.add(newPalette.getDarkest().getDarkened());
+                }
                 fastInPlaceRecolor(outlineTexture.getImage(), Palette.fromImage(outlineTexture), newOutlinePalette);
             }
             fastInPlaceRecolor(image, old, newPalette);
         }
 
-        if(outlineTexture != null){
+        if (outlineTexture != null) {
             originalTexture.applyOverlay(outlineTexture);
             outlineTexture.close();
         }
