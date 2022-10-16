@@ -127,6 +127,7 @@ public class LabelEntity extends HangingEntity {
                 itemstack.setEntityRepresentation(this);
             }
             this.textureId = LabelsMod.res(Utils.getID(itemstack.getItem()).toString().replace(":", "/"));
+            this.needsVisualRefresh = true;
         }
     }
 
@@ -165,8 +166,12 @@ public class LabelEntity extends HangingEntity {
         if (this.direction != null) {
 
             BlockPos pos = this.pos;
+
+
             var shape = level.getBlockState(pos).getBlockSupportShape(level, pos);
             if (shape.isEmpty()) {
+                var vv = Vec3.atCenterOf(pos);
+                this.setPosRaw(vv.x,vv.y,vv.z);
                 return; //wait for survives to be called so this will be removed
             }
             double offset;

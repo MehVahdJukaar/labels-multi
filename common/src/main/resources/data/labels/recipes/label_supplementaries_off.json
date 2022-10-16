@@ -7,7 +7,7 @@
   "key": {
     "0": {
       "item": "minecraft:paper"
-    }
+    },
   },
   "result": {
     "item": "labels:label",
@@ -15,10 +15,14 @@
   },
   "conditions": [
     {
+      "modid": "supplementaries",
+      "type": "forge:mod_loaded"
+    },
+    {
       "type": "forge:not",
       "value": {
-        "modid": "supplementaries",
-        "type": "forge:mod_loaded"
+        "type": "supplementaries:flag",
+        "flag": "antique_ink"
       }
     }
   ]
