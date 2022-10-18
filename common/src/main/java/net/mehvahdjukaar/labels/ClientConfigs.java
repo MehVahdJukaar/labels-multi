@@ -22,8 +22,6 @@ public class ClientConfigs {
     public static Supplier<Boolean> IS_RECOLORED;
     public static Supplier<Boolean> REDUCE_COLORS;
     public static Supplier<Integer> TEXTURE_SIZE;
-    public static Supplier<Integer> DARK_COLOR;
-    public static Supplier<Integer> LIGHT_COLOR;
 
     static {
         ConfigBuilder builder = ConfigBuilder.create(LabelsMod.res("client"), ConfigType.CLIENT);
@@ -35,16 +33,15 @@ public class ClientConfigs {
         builder.pop();
         builder.push("color_settings");
 
-        var dark = new RGBColor(76 / 255f, 49 / 255f, 19 / 255f, 1);//new RGBColor(64 / 255f, 34 / 255f, 0 / 255f, 1);
-        //HCLColor light = new RGBColor(196 / 255f, 155 / 255f, 88 / 255f, 1).asHCL();
-        var light = new RGBColor(243 / 255f, 224 / 255f, 196 / 255f, 1);// new RGBColor(235 / 255f, 213 / 255f, 178 / 255f, 1);
+        //var dark = new RGBColor(76 / 255f, 49 / 255f, 19 / 255f, 1);//new RGBColor(64 / 255f, 34 / 255f, 0 / 255f, 1);
+        //var light = new RGBColor(243 / 255f, 224 / 255f, 196 / 255f, 1);// new RGBColor(235 / 255f, 213 / 255f, 178 / 255f, 1);
 
-
-        IS_RECOLORED = builder.comment("Greyscales then recolors each item using the below provided colors").define("recolor_texture", true);
-        DARK_COLOR = builder.comment("First color to use for recoloring. Middle colors are interpolated between the two")
-                .defineColor("dark_color", dark.toInt());
-        LIGHT_COLOR = builder.comment("Second color to use for recoloring. Middle colors are interpolated between the two")
-                .defineColor("light_color", light.toInt());
+        IS_RECOLORED = builder.comment("Greyscales then recolors each item. You can customize said colors by overriding 'label_colors.png' with a resourcepack")
+                        .define("recolor_texture", true);
+        //DARK_COLOR = builder.comment("First color to use for recoloring. Middle colors are interpolated between the two")
+        //        .defineColor("dark_color", dark.toInt());
+       // LIGHT_COLOR = builder.comment("Second color to use for recoloring. Middle colors are interpolated between the two")
+        //        .defineColor("light_color", light.toInt());
 
         REDUCE_COLORS = builder.comment("Reduce colors of original image before processing. Makes 3d blocks more 2d like by giving them a limited palette")
                         .define("limit_palette", true);

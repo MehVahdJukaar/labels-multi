@@ -61,7 +61,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
         if (entity.tickCount == 0) return;
 
         poseStack.pushPose();
-
+        //buffer = Minecraft.getInstance().renderBuffers().outlineBufferSource();
         poseStack.mulPose(Vector3f.YP.rotationDegrees(180 - entity.getYRot()));
         poseStack.translate(0, -0, -0.5 + 1 / 32f);
         poseStack.translate(-0.5, -0.5, -0.5);
@@ -84,6 +84,9 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
 
                 boolean hasText = ClientConfigs.HAS_TEXT.get();
 
+                //if(entity.hasGlowInk())
+                //buffer = Minecraft.getInstance().renderBuffers().outlineBufferSource();
+
                 VertexConsumer vertexConsumer = buffer.getBuffer(RenderType.entityCutout(tex.getTextureLocation()));
 
                 Matrix4f tr = poseStack.last().pose();
@@ -94,7 +97,10 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
 
                 float s = hasText ? 0.1875f : 0.25f;
                 poseStack.translate(0.5, hasText ? 0.575 : 0.5, z);
+
                 poseStack.pushPose();
+
+                if (entity.hasGlowInk()) light = LightTexture.FULL_BRIGHT;
 
                 vertexConsumer.vertex(tr, -s, -s, 0).color(1f, 1f, 1f, 1f).uv(1f, 0f).overlayCoords(overlay).uv2(light).normal(normal, 0f, 0f, 1f).endVertex();
                 vertexConsumer.vertex(tr, -s, s, 0).color(1f, 1f, 1f, 1f).uv(1f, 1f).overlayCoords(overlay).uv2(light).normal(normal, 0f, 0f, 1f).endVertex();
@@ -105,11 +111,12 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
                 poseStack.popPose();
 
                 if (hasText) drawLabelText(poseStack, buffer, entity, entity.getItem().getHoverName());
+
+
             }
         }
 
         poseStack.popPose();
-
     }
 
 
@@ -120,7 +127,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
 
         boolean reduceColors = ClientConfigs.REDUCE_COLORS.get();
         boolean recolor = ClientConfigs.IS_RECOLORED.get();
-        boolean outline = ClientConfigs.OUTLINE.get() && recolor; //wont even attempt adding an outline if we don't grayscale first
+        boolean outline = ClientConfigs.OUTLINE.get() && recolor; //won't even attempt adding an outline if we don't grayscale first
 
         if (recolor || reduceColors) {
             //cleans image so we don't have similar colors
@@ -182,9 +189,9 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
 
         if (recolor) {
 
-            HCLColor dark = new RGBColor(ClientConfigs.DARK_COLOR.get()).asHCL();
+            HCLColor dark = new RGBColor(ColorManager.getDark()).asHCL();
             //HCLColor light = new RGBColor(196 / 255f, 155 / 255f, 88 / 255f, 1).asHCL();
-            HCLColor light = new RGBColor(ClientConfigs.LIGHT_COLOR.get()).asHCL();
+            HCLColor light = new RGBColor(ColorManager.getLight()).asHCL();
 
             //if (true) return;
 
@@ -284,12 +291,12 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
     }
 
     @Override
-    public ResourceLocation getTextureLocation(LabelEntity p_110775_1_) {
+    public ResourceLocation getTextureLocation(LabelEntity labelEntity) {
         return TextureAtlas.LOCATION_BLOCKS;
     }
 
     @Override
-    protected boolean shouldShowName(LabelEntity p_177070_1_) {
+    protected boolean shouldShowName(LabelEntity labelEntity) {
         return false;
     }
 

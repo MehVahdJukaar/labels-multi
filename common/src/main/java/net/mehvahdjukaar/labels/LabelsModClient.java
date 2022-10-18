@@ -12,6 +12,8 @@ public class LabelsModClient {
         ClientConfigs.init();
         ClientPlatformHelper.addSpecialModelRegistration(LabelsModClient::registerSpecialModels);
         ClientPlatformHelper.addEntityRenderersRegistration(LabelsModClient::registerEntityRenderers);
+        ClientPlatformHelper.addClientReloadListener(ColorManager.RELOAD_INSTANCE, LabelsMod.res("label_colors"));
+
     }
 
     @EventCalled

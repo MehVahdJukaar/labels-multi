@@ -2,6 +2,7 @@ package net.mehvahdjukaar.labels;
 
 import com.google.common.math.DoubleMath;
 import net.mehvahdjukaar.moonlight.api.util.Utils;
+import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -13,6 +14,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -24,6 +26,7 @@ import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -39,6 +42,7 @@ public class LabelEntity extends HangingEntity {
     private static final EntityDataAccessor<ItemStack> DATA_ITEM = SynchedEntityData.defineId(LabelEntity.class,
             EntityDataSerializers.ITEM_STACK);
 
+    private boolean glowInk;
 
     //client
     private boolean needsVisualRefresh = true;
@@ -138,6 +142,7 @@ public class LabelEntity extends HangingEntity {
             tag.put("Item", this.getItem().save(new CompoundTag()));
         }
         tag.putByte("Facing", (byte) this.direction.get2DDataValue());
+        tag.putBoolean("Glowing", this.glowInk);
     }
 
     @Override
@@ -152,6 +157,12 @@ public class LabelEntity extends HangingEntity {
             this.setItem(itemstack);
         }
         this.setDirection(Direction.from2DDataValue(tag.getByte("Facing")));
+        this.glowInk = tag.getBoolean("Glowing");
+    }
+
+    @Override
+    public boolean isCurrentlyGlowing() {
+        return false;
     }
 
     @Nullable
@@ -171,7 +182,7 @@ public class LabelEntity extends HangingEntity {
             var shape = level.getBlockState(pos).getBlockSupportShape(level, pos);
             if (shape.isEmpty()) {
                 var vv = Vec3.atCenterOf(pos);
-                this.setPosRaw(vv.x,vv.y,vv.z);
+                this.setPosRaw(vv.x, vv.y, vv.z);
                 return; //wait for survives to be called so this will be removed
             }
             double offset;
@@ -219,9 +230,10 @@ public class LabelEntity extends HangingEntity {
 
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
+        if (this.isRemoved()) return InteractionResult.PASS;
         ItemStack itemstack = player.getItemInHand(hand);
 
-        if (player.isSecondaryUseActive() && !itemstack.isEmpty() && !this.isRemoved()) {
+        if (player.isSecondaryUseActive() && !itemstack.isEmpty()) {
             if (!this.level.isClientSide) {
                 this.setItem(itemstack);
                 if (!itemstack.isEmpty()) {
@@ -230,13 +242,34 @@ public class LabelEntity extends HangingEntity {
             }
             return InteractionResult.sidedSuccess(player.level.isClientSide);
         } else {
+            if (itemstack.getItem() == Items.GLOW_INK_SAC && !this.glowInk) {
+                if (!player.isCreative()) {
+                    itemstack.shrink(1);
+                }
+                level.playSound(null, pos, SoundEvents.GLOW_INK_SAC_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
+                if (player instanceof ServerPlayer serverPlayer) {
+                    CriteriaTriggers.ITEM_USED_ON_BLOCK.trigger(serverPlayer, pos, itemstack);
+                }
+                this.glowInk = true;
+                return InteractionResult.sidedSuccess(level.isClientSide);
+            } else if (itemstack.getItem() == Items.INK_SAC && this.glowInk) {
+                if (!player.isCreative()) {
+                    itemstack.shrink(1);
+                }
+                level.playSound(null, pos, SoundEvents.INK_SAC_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
+                if (player instanceof ServerPlayer serverPlayer) {
+                    CriteriaTriggers.ITEM_USED_ON_BLOCK.trigger(serverPlayer, pos, itemstack);
+                }
+                this.glowInk = false;
+                return InteractionResult.sidedSuccess(level.isClientSide);
+            }
             InteractionResult interactionresult;
             if (player instanceof ServerPlayer sp) {
                 BlockPos p = this.getSupportingBlockPos();
                 interactionresult = sp.gameMode.useItemOn(sp, sp.level, itemstack, hand,
                         new BlockHitResult(Vec3.atCenterOf(p), this.direction.getOpposite(), p, false));
                 return interactionresult;
-            }else{
+            } else {
                 return InteractionResult.SUCCESS;
             }
         }
@@ -292,5 +325,9 @@ public class LabelEntity extends HangingEntity {
 
     public ResourceLocation getTextureId() {
         return textureId;
+    }
+
+    public boolean hasGlowInk() {
+        return glowInk;
     }
 }
