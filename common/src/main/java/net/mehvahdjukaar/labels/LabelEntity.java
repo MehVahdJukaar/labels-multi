@@ -53,7 +53,7 @@ public class LabelEntity extends HangingEntity {
     @Nullable
     private ResourceLocation textureId;
     private float scale;
-    private List<FormattedCharSequence> labelText;
+    private FormattedCharSequence[] labelText;
 
     public LabelEntity(EntityType<? extends HangingEntity> entityType, Level world) {
         super(entityType, world);
@@ -335,7 +335,7 @@ public class LabelEntity extends HangingEntity {
         return false;
     }
 
-    public void setLabelText(List<FormattedCharSequence> tempPageLines) {
+    public void setLabelText(FormattedCharSequence[] tempPageLines) {
         this.labelText = tempPageLines;
     }
 
@@ -347,7 +347,7 @@ public class LabelEntity extends HangingEntity {
         return scale;
     }
 
-    public List<FormattedCharSequence> getLabelText() {
+    public FormattedCharSequence[] getLabelText() {
         return labelText;
     }
 

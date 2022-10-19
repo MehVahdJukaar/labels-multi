@@ -9,6 +9,7 @@ import com.mojang.math.Matrix4f;
 import com.mojang.math.Vector3f;
 import net.mehvahdjukaar.moonlight.api.client.texture_renderer.FrameBufferBackedDynamicTexture;
 import net.mehvahdjukaar.moonlight.api.client.texture_renderer.RenderedTexturesManager;
+import net.mehvahdjukaar.moonlight.api.client.util.LOD;
 import net.mehvahdjukaar.moonlight.api.client.util.TextUtil;
 import net.mehvahdjukaar.moonlight.api.platform.ClientPlatformHelper;
 import net.mehvahdjukaar.moonlight.api.resources.textures.Palette;
@@ -16,6 +17,7 @@ import net.mehvahdjukaar.moonlight.api.resources.textures.SpriteUtils;
 import net.mehvahdjukaar.moonlight.api.resources.textures.TextureImage;
 import net.mehvahdjukaar.moonlight.api.util.math.colors.HCLColor;
 import net.mehvahdjukaar.moonlight.api.util.math.colors.RGBColor;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
@@ -29,12 +31,12 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.ModelManager;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.material.MaterialColor;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,12 +49,14 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
 
     private final ModelBlockRenderer modelRenderer;
     private final ModelManager modelManager;
+    private final Camera camera;
 
     public LabelEntityRenderer(EntityRendererProvider.Context context) {
         super(context);
         Minecraft minecraft = Minecraft.getInstance();
         this.modelRenderer = minecraft.getBlockRenderer().getModelRenderer();
         this.modelManager = minecraft.getBlockRenderer().getBlockModelShaper().getModelManager();
+        this.camera = minecraft.gameRenderer.getMainCamera();
     }
 
     @Override
@@ -103,7 +107,8 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
 
                 poseStack.pushPose();
 
-                if (entity.hasGlowInk()) light = LightTexture.FULL_BRIGHT;
+                boolean glow = entity.hasGlowInk();
+                if (glow) light = LightTexture.FULL_BRIGHT;
 
                 vertexConsumer.vertex(tr, -s, -s, 0).color(1f, 1f, 1f, 1f).uv(1f, 0f).overlayCoords(overlay).uv2(light).normal(normal, 0f, 0f, 1f).endVertex();
                 vertexConsumer.vertex(tr, -s, s, 0).color(1f, 1f, 1f, 1f).uv(1f, 1f).overlayCoords(overlay).uv2(light).normal(normal, 0f, 0f, 1f).endVertex();
@@ -113,9 +118,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
 
                 poseStack.popPose();
 
-                if (hasText) drawLabelText(poseStack, buffer, entity, entity.getItem().getHoverName());
-
-
+                if (hasText) drawLabelText(poseStack, buffer, entity, entity.getItem().getHoverName(), glow, light);
             }
         }
 
@@ -197,7 +200,17 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
             HCLColor light = new RGBColor(ColorManager.getLight(tint)).asHCL();
 
 
-            if (tint != null) {
+            if (tint != null && false) {
+                //use text color
+                var v = new TextUtil.RenderTextProperties(tint, true, LightTexture.FULL_BRIGHT, Style.EMPTY, () -> true);
+                var dc = v.darkenedColor();
+                var lc = tint.getTextColor();
+                if (dc != lc) {
+                    dark = new RGBColor((dc >> 16 & 0xFF) / 255.0F, (dc >> 8 & 0xFF) / 255.0F, (dc & 0xFF) / 255.0F, 1).asHCL();
+                    light = new RGBColor((lc >> 16 & 0xFF) / 255.0F, (lc >> 8 & 0xFF) / 255.0F, (lc & 0xFF) / 255.0F, 1).asHCL();
+               }
+
+                //  if (!vv.equals(light)) dark = vv;
                 //getMaterialColor().calculateRGBColor(MaterialColor.Brightness.HIGH)
                 //var f = tint.getTextureDiffuseColors();
                 //var l = new RGBColor(f[0],f[1],f[2],1);
@@ -205,8 +218,8 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
                 //dark = dark.asRGB().mixWith(new RGBColor(ColorManager.getDark(null)), 0.7f).asHCL();
                 //light = light.asRGB().mixWith(l, 0.7f).asHCL();
 
-               // dark = dark.withLuminance(dark.luminance() * 0.8f);
-               // light = light.withLuminance(light.luminance() * 0.8f + 0.2f);
+                // dark = dark.withLuminance(dark.luminance() * 0.8f);
+                // light = light.withLuminance(light.luminance() * 0.8f + 0.2f);
                 //light = light.withHue(light.hue() * 0.95f);
                 //dark = dark.withHue(dark.hue() * 0.95f + 0.05f);
                 // dark = RGBColor.averageColors(dark.asRGB(), d).asHCL();
@@ -266,7 +279,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
     }
 
     private void drawLabelText(PoseStack matrixStack, MultiBufferSource buffer,
-                               LabelEntity entity, Component text) {
+                               LabelEntity entity, Component text, boolean glow, int light) {
         matrixStack.scale(-1, 1, -1);
 
         Font font = Minecraft.getInstance().font;
@@ -279,26 +292,27 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
             float paperHeight = 1 - (2 * 0.45f);
             float paperWidth = 1 - (2 * 0.275f);
             var pair = TextUtil.fitLinesToBox(font, text, paperWidth, paperHeight);
-            entity.setLabelText(pair.getFirst());
+            entity.setLabelText(pair.getFirst().toArray(FormattedCharSequence[]::new));
             entity.setLabelTextScale(pair.getSecond());
         }
 
         float scale = entity.getLabelTextScale();
-        List<FormattedCharSequence> tempPageLines = entity.getLabelText();
+        FormattedCharSequence[] tempPageLines = entity.getLabelText();
+
+        matrixStack.translate(0, -0.475, 0);
 
         matrixStack.scale(scale, -scale, scale);
-        int numberOfLines = tempPageLines.size();
 
-        for (int lin = 0; lin < numberOfLines; ++lin) {
+        DyeColor c = DyeColor.BLACK;
 
-            FormattedCharSequence str = tempPageLines.get(lin);
-
-            float dx = (float) (-font.width(str) / 2) + 0.5f;
-            float dy = (((1f / scale) - (8 * numberOfLines)) / 2f) + 0.5f;
-
-            font.drawInBatch(str, dx, dy + 8 * lin, 0xFF000000, false, matrixStack.last().pose(),
-                    buffer, false, 0, LightTexture.FULL_BRIGHT);
+        if (ClientConfigs.COLORED_TEXT.get()) {
+            var d = entity.getColor();
+            if (d != null) c = d;
         }
+
+        TextUtil.renderAllLines(tempPageLines, 10, font, matrixStack, buffer,
+                new TextUtil.RenderTextProperties(c, glow, light, Style.EMPTY,
+                        () -> new LOD(camera, entity.getPos()).isVeryNear()));
 
         matrixStack.popPose();
     }

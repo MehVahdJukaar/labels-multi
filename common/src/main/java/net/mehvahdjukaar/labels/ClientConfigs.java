@@ -18,6 +18,7 @@ public class ClientConfigs {
     public static ConfigSpec CONFIG_SPEC;
 
     public static Supplier<Boolean> HAS_TEXT;
+    public static Supplier<Boolean> COLORED_TEXT;
     public static Supplier<Boolean> OUTLINE;
     public static Supplier<Boolean> IS_RECOLORED;
     public static Supplier<Boolean> REDUCE_COLORS;
@@ -28,6 +29,8 @@ public class ClientConfigs {
 
         builder.push("general");
         HAS_TEXT = builder.comment("Draws item name on labels").define("draw_item_name", false);
+        COLORED_TEXT = builder.comment("If text is enabled, allows it to accept the label dye color")
+                .define("colored_text", true);
         TEXTURE_SIZE = builder.comment("Item texture resolution. You might want to keep this multiples of 16")
                 .define("texture_resolution", 16, 8, 512);
         builder.pop();
