@@ -193,9 +193,10 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
         if (recolor) {
 
 
-            HCLColor dark = new RGBColor(ColorManager.getDark()).asHCL();
-            HCLColor light = new RGBColor(ColorManager.getLight()).asHCL();
+            HCLColor dark = new RGBColor(ColorManager.getDark(tint)).asHCL();
+            HCLColor light = new RGBColor(ColorManager.getLight(tint)).asHCL();
 
+            /*
             if (tint != null) {
                 var l = new RGBColor(tint.getMaterialColor().calculateRGBColor(MaterialColor.Brightness.HIGH));
                 // var d = new RGBColor( tint.getMaterialColor().calculateRGBColor(MaterialColor.Brightness.LOW));
@@ -208,7 +209,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
                 dark = dark.withHue(dark.hue() * 0.95f + 0.05f);
                 // dark = RGBColor.averageColors(dark.asRGB(), d).asHCL();
                 // light = RGBColor.averageColors(light.asRGB(), d).asHCL();
-            }
+            }*/
 
             Palette old = Palette.fromImage(originalTexture, null, 0);
             int s = old.size();

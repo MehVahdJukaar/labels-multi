@@ -1,27 +1,32 @@
 package net.mehvahdjukaar.labels;
 
+import com.mojang.datafixers.util.Pair;
 import net.mehvahdjukaar.moonlight.api.client.GenericSimpleResourceReloadListener;
 import net.mehvahdjukaar.moonlight.api.resources.textures.SpriteUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.item.DyeColor;
 
+import javax.annotation.Nullable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ColorManager extends GenericSimpleResourceReloadListener {
 
     public static final ColorManager RELOAD_INSTANCE = new ColorManager();
 
-    public static int getDark() {
-        return DARK;
+    private static final Map<DyeColor, Pair<Integer,Integer>> COLORS = new HashMap<>();
+
+    public static int getDark(@Nullable DyeColor color) {
+        return COLORS.get(color).getFirst();
     }
 
-    public static int getLight() {
-        return LIGHT;
+    public static int getLight(@Nullable DyeColor color) {
+        return COLORS.get(color).getSecond();
     }
 
-    private static int DARK = 0;
-    private static int LIGHT = 0;
 
     public ColorManager() {
         super("textures/entity", "label_colors.png");
@@ -32,11 +37,12 @@ public class ColorManager extends GenericSimpleResourceReloadListener {
 
         for (var res : locations) {
             var l = SpriteUtils.parsePaletteStrip(manager,
-                    new ResourceLocation(res.getNamespace(),"textures/entity/label_colors.png"), 2);
-            DARK = l.get(0);
-            LIGHT = l.get(1);
+                    new ResourceLocation(res.getNamespace(),"textures/entity/label_colors.png"), 32+2);
+            var i = l.iterator();
+            COLORS.put(null, Pair.of(i.next(), i.next()));
+            for(var d : DyeColor.values()){
+                COLORS.put(d, Pair.of(i.next(),i.next()));
+            }
         }
-
-
     }
 }
