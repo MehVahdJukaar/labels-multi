@@ -295,7 +295,7 @@ public class LabelEntity extends HangingEntity {
             if (player instanceof ServerPlayer sp) {
                 BlockPos p = this.getSupportingBlockPos();
                 interactionresult = sp.gameMode.useItemOn(sp, sp.level, itemstack, hand,
-                        new BlockHitResult(Vec3.atCenterOf(p), this.direction.getOpposite(), p, false));
+                        new BlockHitResult(Vec3.atCenterOf(p), this.direction, p, false));
                 return interactionresult;
             } else {
                 return InteractionResult.SUCCESS;

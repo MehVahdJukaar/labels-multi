@@ -200,6 +200,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
             HCLColor light = new RGBColor(ColorManager.getLight(tint)).asHCL();
 
 
+
             if (tint != null && false) {
                 //use text color
                 var v = new TextUtil.RenderTextProperties(tint, true, LightTexture.FULL_BRIGHT, Style.EMPTY, () -> true);
