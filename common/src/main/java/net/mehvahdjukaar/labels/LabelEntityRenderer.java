@@ -31,9 +31,12 @@ import net.minecraft.client.resources.model.ModelManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.material.MaterialColor;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,14 +74,14 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
                 light, OverlayTexture.NO_OVERLAY);
 
         Item item = entity.getItem().getItem();
-
-        if (item != Items.AIR) {
+        var id = entity.getTextureId();
+        if (item != Items.AIR && id != null) {
 
             FrameBufferBackedDynamicTexture tex = RenderedTexturesManager.requestFlatItemTexture(
-                    entity.getTextureId(),
+                    id,
                     item,
                     ClientConfigs.TEXTURE_SIZE.get(),
-                    LabelEntityRenderer::postProcess);
+                    i -> LabelEntityRenderer.postProcess(i, entity.getColor()));
 
             if (tex.isInitialized()) {
 
@@ -121,7 +124,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
 
 
     //post process image
-    private static void postProcess(NativeImage image) {
+    private static void postProcess(NativeImage image, @Nullable DyeColor tint) {
 
         //tex.getPixels().flipY();
 
@@ -189,11 +192,23 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
 
         if (recolor) {
 
+
             HCLColor dark = new RGBColor(ColorManager.getDark()).asHCL();
-            //HCLColor light = new RGBColor(196 / 255f, 155 / 255f, 88 / 255f, 1).asHCL();
             HCLColor light = new RGBColor(ColorManager.getLight()).asHCL();
 
-            //if (true) return;
+            if (tint != null) {
+                var l = new RGBColor(tint.getMaterialColor().calculateRGBColor(MaterialColor.Brightness.HIGH));
+                // var d = new RGBColor( tint.getMaterialColor().calculateRGBColor(MaterialColor.Brightness.LOW));
+                dark = dark.asRGB().mixWith(l, 0.7f).asHCL();
+                light = light.asRGB().mixWith(l, 0.7f).asHCL();
+
+                dark = dark.withLuminance(dark.luminance() * 0.8f);
+                light = light.withLuminance(light.luminance() * 0.8f + 0.2f);
+                light = light.withHue(light.hue() * 0.95f);
+                dark = dark.withHue(dark.hue() * 0.95f + 0.05f);
+                // dark = RGBColor.averageColors(dark.asRGB(), d).asHCL();
+                // light = RGBColor.averageColors(light.asRGB(), d).asHCL();
+            }
 
             Palette old = Palette.fromImage(originalTexture, null, 0);
             int s = old.size();

@@ -1,6 +1,8 @@
 package net.mehvahdjukaar.labels;
 
 import com.google.common.math.DoubleMath;
+import net.mehvahdjukaar.moonlight.api.platform.ForgeHelper;
+import net.mehvahdjukaar.moonlight.api.platform.PlatformHelper;
 import net.mehvahdjukaar.moonlight.api.util.Utils;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
@@ -25,6 +27,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameRules;
@@ -42,10 +45,19 @@ public class LabelEntity extends HangingEntity {
     private static final EntityDataAccessor<ItemStack> DATA_ITEM = SynchedEntityData.defineId(LabelEntity.class,
             EntityDataSerializers.ITEM_STACK);
 
+    private static final EntityDataAccessor<Byte> DATA_DYE_COLOR = SynchedEntityData.defineId(LabelEntity.class,
+            EntityDataSerializers.BYTE);
+
+    private static final EntityDataAccessor<Boolean> DATA_GLOWING = SynchedEntityData.defineId(LabelEntity.class,
+            EntityDataSerializers.BOOLEAN);
+
     private boolean glowInk;
+    @Nullable
+    private DyeColor color;
 
     //client
     private boolean needsVisualRefresh = true;
+    @Nullable
     private ResourceLocation textureId;
     private float scale;
     private List<FormattedCharSequence> labelText;
@@ -75,6 +87,8 @@ public class LabelEntity extends HangingEntity {
     @Override
     protected void defineSynchedData() {
         this.entityData.define(DATA_ITEM, ItemStack.EMPTY);
+        this.entityData.define(DATA_DYE_COLOR, color == null ? (byte) -1 : (byte) color.ordinal());
+        this.entityData.define(DATA_GLOWING, glowInk);
     }
 
     @Override
@@ -130,9 +144,20 @@ public class LabelEntity extends HangingEntity {
             if (!itemstack.isEmpty() && itemstack.getEntityRepresentation() != this) {
                 itemstack.setEntityRepresentation(this);
             }
-            this.textureId = LabelsMod.res(Utils.getID(itemstack.getItem()).toString().replace(":", "/"));
+            recomputeTexture(itemstack);
             this.needsVisualRefresh = true;
+        } else if (pKey.equals(DATA_GLOWING)) {
+            this.glowInk = this.entityData.get(DATA_GLOWING);
+        } else if (pKey.equals(DATA_DYE_COLOR)) {
+            var i = this.entityData.get(DATA_DYE_COLOR);
+            this.color = i == -1 ? null : DyeColor.byId(i);
         }
+    }
+
+    private void recomputeTexture(ItemStack itemstack) {
+        String s = Utils.getID(itemstack.getItem()).toString().replace(":", "/");
+        if (color != null) s += "_" + color.getName();
+        this.textureId = LabelsMod.res(s);
     }
 
     @Override
@@ -143,6 +168,9 @@ public class LabelEntity extends HangingEntity {
         }
         tag.putByte("Facing", (byte) this.direction.get2DDataValue());
         tag.putBoolean("Glowing", this.glowInk);
+        if (this.color != null) {
+            tag.putByte("DyeColor", (byte) this.color.ordinal());
+        }
     }
 
     @Override
@@ -158,6 +186,7 @@ public class LabelEntity extends HangingEntity {
         }
         this.setDirection(Direction.from2DDataValue(tag.getByte("Facing")));
         this.glowInk = tag.getBoolean("Glowing");
+        this.color = DyeColor.byId(tag.getByte("DyeColor"));
     }
 
     @Override
@@ -177,7 +206,6 @@ public class LabelEntity extends HangingEntity {
         if (this.direction != null) {
 
             BlockPos pos = this.pos;
-
 
             var shape = level.getBlockState(pos).getBlockSupportShape(level, pos);
             if (shape.isEmpty()) {
@@ -242,25 +270,29 @@ public class LabelEntity extends HangingEntity {
             }
             return InteractionResult.sidedSuccess(player.level.isClientSide);
         } else {
+            boolean success = false;
             if (itemstack.getItem() == Items.GLOW_INK_SAC && !this.glowInk) {
-                if (!player.isCreative()) {
-                    itemstack.shrink(1);
-                }
                 level.playSound(null, pos, SoundEvents.GLOW_INK_SAC_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
-                if (player instanceof ServerPlayer serverPlayer) {
-                    CriteriaTriggers.ITEM_USED_ON_BLOCK.trigger(serverPlayer, pos, itemstack);
-                }
                 this.glowInk = true;
-                return InteractionResult.sidedSuccess(level.isClientSide);
+                success = true;
             } else if (itemstack.getItem() == Items.INK_SAC && this.glowInk) {
+                level.playSound(null, pos, SoundEvents.INK_SAC_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
+                this.glowInk = false;
+                success = true;
+            } else if (ForgeHelper.getColor(itemstack) != null) {
+                level.playSound(null, pos, SoundEvents.DYE_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
+                this.color = ForgeHelper.getColor(itemstack);
+                this.recomputeTexture(this.getItem());
+                success = true;
+            }
+            if (success) {
                 if (!player.isCreative()) {
                     itemstack.shrink(1);
                 }
-                level.playSound(null, pos, SoundEvents.INK_SAC_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
                 if (player instanceof ServerPlayer serverPlayer) {
                     CriteriaTriggers.ITEM_USED_ON_BLOCK.trigger(serverPlayer, pos, itemstack);
                 }
-                this.glowInk = false;
+
                 return InteractionResult.sidedSuccess(level.isClientSide);
             }
             InteractionResult interactionresult;
@@ -323,11 +355,17 @@ public class LabelEntity extends HangingEntity {
         return labelText;
     }
 
+    @Nullable
     public ResourceLocation getTextureId() {
         return textureId;
     }
 
     public boolean hasGlowInk() {
         return glowInk;
+    }
+
+    @Nullable
+    public DyeColor getColor() {
+        return color;
     }
 }

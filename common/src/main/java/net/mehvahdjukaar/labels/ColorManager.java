@@ -37,5 +37,6 @@ public class ColorManager extends GenericSimpleResourceReloadListener {
             LIGHT = l.get(1);
         }
 
+
     }
 }
