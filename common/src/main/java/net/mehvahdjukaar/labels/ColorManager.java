@@ -20,11 +20,11 @@ public class ColorManager extends GenericSimpleResourceReloadListener {
     private static final Map<DyeColor, Pair<Integer,Integer>> COLORS = new HashMap<>();
 
     public static int getDark(@Nullable DyeColor color) {
-        return COLORS.get(color).getFirst();
+        return COLORS.get(color).getSecond();
     }
 
     public static int getLight(@Nullable DyeColor color) {
-        return COLORS.get(color).getSecond();
+        return COLORS.get(color).getFirst();
     }
 
 

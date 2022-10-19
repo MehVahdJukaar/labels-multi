@@ -196,20 +196,22 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
             HCLColor dark = new RGBColor(ColorManager.getDark(tint)).asHCL();
             HCLColor light = new RGBColor(ColorManager.getLight(tint)).asHCL();
 
-            /*
-            if (tint != null) {
-                var l = new RGBColor(tint.getMaterialColor().calculateRGBColor(MaterialColor.Brightness.HIGH));
-                // var d = new RGBColor( tint.getMaterialColor().calculateRGBColor(MaterialColor.Brightness.LOW));
-                dark = dark.asRGB().mixWith(l, 0.7f).asHCL();
-                light = light.asRGB().mixWith(l, 0.7f).asHCL();
 
-                dark = dark.withLuminance(dark.luminance() * 0.8f);
-                light = light.withLuminance(light.luminance() * 0.8f + 0.2f);
-                light = light.withHue(light.hue() * 0.95f);
-                dark = dark.withHue(dark.hue() * 0.95f + 0.05f);
+            if (tint != null) {
+                //getMaterialColor().calculateRGBColor(MaterialColor.Brightness.HIGH)
+                //var f = tint.getTextureDiffuseColors();
+                //var l = new RGBColor(f[0],f[1],f[2],1);
+                // var d = new RGBColor( tint.getMaterialColor().calculateRGBColor(MaterialColor.Brightness.LOW));
+                //dark = dark.asRGB().mixWith(new RGBColor(ColorManager.getDark(null)), 0.7f).asHCL();
+                //light = light.asRGB().mixWith(l, 0.7f).asHCL();
+
+               // dark = dark.withLuminance(dark.luminance() * 0.8f);
+               // light = light.withLuminance(light.luminance() * 0.8f + 0.2f);
+                //light = light.withHue(light.hue() * 0.95f);
+                //dark = dark.withHue(dark.hue() * 0.95f + 0.05f);
                 // dark = RGBColor.averageColors(dark.asRGB(), d).asHCL();
                 // light = RGBColor.averageColors(light.asRGB(), d).asHCL();
-            }*/
+            }
 
             Palette old = Palette.fromImage(originalTexture, null, 0);
             int s = old.size();

@@ -2,7 +2,6 @@ package net.mehvahdjukaar.labels;
 
 import com.google.common.math.DoubleMath;
 import net.mehvahdjukaar.moonlight.api.platform.ForgeHelper;
-import net.mehvahdjukaar.moonlight.api.platform.PlatformHelper;
 import net.mehvahdjukaar.moonlight.api.util.Utils;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
@@ -44,16 +43,10 @@ public class LabelEntity extends HangingEntity {
 
     private static final EntityDataAccessor<ItemStack> DATA_ITEM = SynchedEntityData.defineId(LabelEntity.class,
             EntityDataSerializers.ITEM_STACK);
-
     private static final EntityDataAccessor<Byte> DATA_DYE_COLOR = SynchedEntityData.defineId(LabelEntity.class,
             EntityDataSerializers.BYTE);
-
     private static final EntityDataAccessor<Boolean> DATA_GLOWING = SynchedEntityData.defineId(LabelEntity.class,
             EntityDataSerializers.BOOLEAN);
-
-    private boolean glowInk;
-    @Nullable
-    private DyeColor color;
 
     //client
     private boolean needsVisualRefresh = true;
@@ -87,8 +80,8 @@ public class LabelEntity extends HangingEntity {
     @Override
     protected void defineSynchedData() {
         this.entityData.define(DATA_ITEM, ItemStack.EMPTY);
-        this.entityData.define(DATA_DYE_COLOR, color == null ? (byte) -1 : (byte) color.ordinal());
-        this.entityData.define(DATA_GLOWING, glowInk);
+        this.entityData.define(DATA_DYE_COLOR, (byte) -1);
+        this.entityData.define(DATA_GLOWING, false);
     }
 
     @Override
@@ -146,16 +139,14 @@ public class LabelEntity extends HangingEntity {
             }
             recomputeTexture(itemstack);
             this.needsVisualRefresh = true;
-        } else if (pKey.equals(DATA_GLOWING)) {
-            this.glowInk = this.entityData.get(DATA_GLOWING);
         } else if (pKey.equals(DATA_DYE_COLOR)) {
-            var i = this.entityData.get(DATA_DYE_COLOR);
-            this.color = i == -1 ? null : DyeColor.byId(i);
+            recomputeTexture(this.getItem());
         }
     }
 
     private void recomputeTexture(ItemStack itemstack) {
         String s = Utils.getID(itemstack.getItem()).toString().replace(":", "/");
+        var color = this.getColor();
         if (color != null) s += "_" + color.getName();
         this.textureId = LabelsMod.res(s);
     }
@@ -167,9 +158,10 @@ public class LabelEntity extends HangingEntity {
             tag.put("Item", this.getItem().save(new CompoundTag()));
         }
         tag.putByte("Facing", (byte) this.direction.get2DDataValue());
-        tag.putBoolean("Glowing", this.glowInk);
-        if (this.color != null) {
-            tag.putByte("DyeColor", (byte) this.color.ordinal());
+        tag.putBoolean("Glowing", this.hasGlowInk());
+        var c = this.getColor();
+        if (c != null) {
+            tag.putByte("DyeColor", (byte) c.ordinal());
         }
     }
 
@@ -185,8 +177,10 @@ public class LabelEntity extends HangingEntity {
             this.setItem(itemstack);
         }
         this.setDirection(Direction.from2DDataValue(tag.getByte("Facing")));
-        this.glowInk = tag.getBoolean("Glowing");
-        this.color = DyeColor.byId(tag.getByte("DyeColor"));
+        this.getEntityData().set(DATA_GLOWING, tag.getBoolean("Glowing"));
+        if (tag.contains("DyeColor")) {
+            this.getEntityData().set(DATA_DYE_COLOR,tag.getByte("DyeColor"));
+        }
     }
 
     @Override
@@ -271,17 +265,19 @@ public class LabelEntity extends HangingEntity {
             return InteractionResult.sidedSuccess(player.level.isClientSide);
         } else {
             boolean success = false;
-            if (itemstack.getItem() == Items.GLOW_INK_SAC && !this.glowInk) {
+            boolean glowInk = this.hasGlowInk();
+            if (itemstack.getItem() == Items.GLOW_INK_SAC && !glowInk) {
                 level.playSound(null, pos, SoundEvents.GLOW_INK_SAC_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
-                this.glowInk = true;
+                this.getEntityData().set(DATA_GLOWING, true);
                 success = true;
-            } else if (itemstack.getItem() == Items.INK_SAC && this.glowInk) {
+            } else if (itemstack.getItem() == Items.INK_SAC && glowInk) {
                 level.playSound(null, pos, SoundEvents.INK_SAC_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
-                this.glowInk = false;
+                this.getEntityData().set(DATA_GLOWING, false);
                 success = true;
             } else if (ForgeHelper.getColor(itemstack) != null) {
                 level.playSound(null, pos, SoundEvents.DYE_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
-                this.color = ForgeHelper.getColor(itemstack);
+                var color = ForgeHelper.getColor(itemstack);
+                this.getEntityData().set(DATA_DYE_COLOR, (byte) (color == null ? -1 : color.ordinal()));
                 this.recomputeTexture(this.getItem());
                 success = true;
             }
@@ -361,11 +357,12 @@ public class LabelEntity extends HangingEntity {
     }
 
     public boolean hasGlowInk() {
-        return glowInk;
+        return this.getEntityData().get(DATA_GLOWING);
     }
 
     @Nullable
     public DyeColor getColor() {
-        return color;
+        var i = this.getEntityData().get(DATA_DYE_COLOR);
+        return i == -1 ? null : DyeColor.byId(i);
     }
 }
