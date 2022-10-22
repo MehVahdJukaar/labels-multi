@@ -4,14 +4,14 @@ import net.mehvahdjukaar.moonlight.api.client.texture_renderer.RenderedTexturesM
 import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigBuilder;
 import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigSpec;
 import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigType;
-import net.mehvahdjukaar.moonlight.api.resources.textures.Palette;
-import net.mehvahdjukaar.moonlight.api.util.math.colors.RGBColor;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.monster.Slime;
 
 import java.util.function.Supplier;
 
 public class ClientConfigs {
 
-    public static void init(){
+    public static void init() {
 
     }
 
@@ -23,6 +23,24 @@ public class ClientConfigs {
     public static Supplier<Boolean> IS_RECOLORED;
     public static Supplier<Boolean> REDUCE_COLORS;
     public static Supplier<Integer> TEXTURE_SIZE;
+    public static Supplier<Preset> COLOR_PRESET;
+
+    public enum Preset {
+        DEFAULT(""),
+        PENCIL("pencil_"),
+        PASTEL("pastel_"),
+        FLAT("flat_");
+
+        private final String name;
+
+        Preset(String pastel) {
+            this.name = pastel;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
 
     static {
         ConfigBuilder builder = ConfigBuilder.create(LabelsMod.res("client"), ConfigType.CLIENT);
@@ -40,15 +58,19 @@ public class ClientConfigs {
         //var light = new RGBColor(243 / 255f, 224 / 255f, 196 / 255f, 1);// new RGBColor(235 / 255f, 213 / 255f, 178 / 255f, 1);
 
         IS_RECOLORED = builder.comment("Greyscales then recolors each item. You can customize said colors by overriding 'label_colors.png' with a resourcepack")
-                        .define("recolor_texture", true);
+                .define("recolor_texture", true);
         //DARK_COLOR = builder.comment("First color to use for recoloring. Middle colors are interpolated between the two")
         //        .defineColor("dark_color", dark.toInt());
-       // LIGHT_COLOR = builder.comment("Second color to use for recoloring. Middle colors are interpolated between the two")
+        // LIGHT_COLOR = builder.comment("Second color to use for recoloring. Middle colors are interpolated between the two")
         //        .defineColor("light_color", light.toInt());
-
+        COLOR_PRESET = builder.comment("picks one of the 3 presets for dyes on labels. " +
+                        "This simply changes the texture that is used." +
+                        "Requires a resource pack reload" +
+                        "Note that you can always change this manually with a resource pack to control all the colors individually")
+                .define("color_texture_preset", Preset.PENCIL);
         REDUCE_COLORS = builder.comment("Reduce colors of original image before processing. Makes 3d blocks more 2d like by giving them a limited palette")
-                        .define("limit_palette", true);
-        OUTLINE = builder.comment("Adds an outline to label images").define("outline",true);
+                .define("limit_palette", true);
+        OUTLINE = builder.comment("Adds an outline to label images").define("outline", true);
         builder.pop();
 
         builder.onChange(RenderedTexturesManager::clearCache);

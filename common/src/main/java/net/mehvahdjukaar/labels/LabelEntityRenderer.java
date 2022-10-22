@@ -15,6 +15,7 @@ import net.mehvahdjukaar.moonlight.api.platform.ClientPlatformHelper;
 import net.mehvahdjukaar.moonlight.api.resources.textures.Palette;
 import net.mehvahdjukaar.moonlight.api.resources.textures.SpriteUtils;
 import net.mehvahdjukaar.moonlight.api.resources.textures.TextureImage;
+import net.mehvahdjukaar.moonlight.api.util.math.colors.BaseColor;
 import net.mehvahdjukaar.moonlight.api.util.math.colors.HCLColor;
 import net.mehvahdjukaar.moonlight.api.util.math.colors.RGBColor;
 import net.minecraft.client.Camera;
@@ -196,10 +197,13 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
         if (recolor) {
 
 
-            HCLColor dark = new RGBColor(ColorManager.getDark(tint)).asHCL();
-            HCLColor light = new RGBColor(ColorManager.getLight(tint)).asHCL();
+            BaseColor<?> dark = new RGBColor(ColorManager.getDark(tint));
+            BaseColor<?> light = new RGBColor(ColorManager.getLight(tint));
 
-
+            if(ClientConfigs.COLOR_PRESET.get() != ClientConfigs.Preset.DEFAULT){
+                dark = dark.asHCL();
+                light = light.asHCL();
+            }
 
             if (tint != null && false) {
                 //use text color
@@ -207,8 +211,8 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
                 var dc = v.darkenedColor();
                 var lc = tint.getTextColor();
                 if (dc != lc) {
-                    dark = new RGBColor((dc >> 16 & 0xFF) / 255.0F, (dc >> 8 & 0xFF) / 255.0F, (dc & 0xFF) / 255.0F, 1).asHCL();
-                    light = new RGBColor((lc >> 16 & 0xFF) / 255.0F, (lc >> 8 & 0xFF) / 255.0F, (lc & 0xFF) / 255.0F, 1).asHCL();
+                 //   dark = new RGBColor((dc >> 16 & 0xFF) / 255.0F, (dc >> 8 & 0xFF) / 255.0F, (dc & 0xFF) / 255.0F, 1).asHCL();
+                 //   light = new RGBColor((lc >> 16 & 0xFF) / 255.0F, (lc >> 8 & 0xFF) / 255.0F, (lc & 0xFF) / 255.0F, 1).asHCL();
                }
 
                 //  if (!vv.equals(light)) dark = vv;
@@ -233,7 +237,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
             if (s < 3) {
                 newPalette = Palette.ofColors(List.of(light, dark));
             } else {
-                newPalette = Palette.fromArc(light, dark, s + (outline ? 2 : 0));
+                newPalette = Palette.fromArc((BaseColor)light,(BaseColor) dark, s + (outline ? 2 : 0));
             }
 
             if (outline) {

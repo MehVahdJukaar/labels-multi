@@ -35,13 +35,16 @@ public class ColorManager extends GenericSimpleResourceReloadListener {
     @Override
     public void apply(List<ResourceLocation> locations, ResourceManager manager, ProfilerFiller filler) {
 
+        var s = ClientConfigs.COLOR_PRESET.get();
         for (var res : locations) {
-            var l = SpriteUtils.parsePaletteStrip(manager,
-                    new ResourceLocation(res.getNamespace(),"textures/entity/label_colors.png"), 32+2);
-            var i = l.iterator();
-            COLORS.put(null, Pair.of(i.next(), i.next()));
-            for(var d : DyeColor.values()){
-                COLORS.put(d, Pair.of(i.next(),i.next()));
+            if(res.getPath().equals(s.getName())) {
+                var l = SpriteUtils.parsePaletteStrip(manager,
+                        new ResourceLocation(res.getNamespace(), "textures/entity/"+res.getPath()+"label_colors.png"), 32 + 2);
+                var i = l.iterator();
+                COLORS.put(null, Pair.of(i.next(), i.next()));
+                for (var d : DyeColor.values()) {
+                    COLORS.put(d, Pair.of(i.next(), i.next()));
+                }
             }
         }
     }
