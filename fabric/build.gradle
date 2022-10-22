@@ -30,18 +30,13 @@ dependencies {
 
 
     //}
-    modImplementation("curse.maven:yacl-667299:3987709")
 
     // modCompileOnly("curse.maven:modmenu-308702:3920481")
 
-    modImplementation("curse.maven:modmenu-308702:3920481") {
-        exclude module: "fabric-api"
-    }
 
     //modImplementation(fileTree(dir: 'mods_fabric', include: '*.jar'))
     //modImplementation("curse.maven:selene-499980:3859239")
 
-    modImplementation ("net.mehvahdjukaar:moonlight-fabric:${project.moonlight_version}")
 }
 
 

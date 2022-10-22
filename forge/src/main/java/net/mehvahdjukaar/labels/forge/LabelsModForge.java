@@ -2,19 +2,7 @@ package net.mehvahdjukaar.labels.forge;
 
 import net.mehvahdjukaar.labels.LabelsMod;
 import net.mehvahdjukaar.labels.LabelsModClient;
-import net.mehvahdjukaar.moonlight.api.platform.PlatformHelper;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.context.UseOnContext;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelReader;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.server.ServerAboutToStartEvent;
+import net.mehvahdjukaar.moonlight2.api.platform.PlatformHelper;
 import net.minecraftforge.fml.common.Mod;
 
 /**

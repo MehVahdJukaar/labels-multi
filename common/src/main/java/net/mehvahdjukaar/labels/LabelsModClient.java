@@ -1,7 +1,6 @@
 package net.mehvahdjukaar.labels;
 
-import net.mehvahdjukaar.moonlight.api.misc.EventCalled;
-import net.mehvahdjukaar.moonlight.api.platform.ClientPlatformHelper;
+import net.mehvahdjukaar.moonlight2.api.platform.ClientPlatformHelper;
 import net.minecraft.resources.ResourceLocation;
 
 public class LabelsModClient {
@@ -16,12 +15,10 @@ public class LabelsModClient {
 
     }
 
-    @EventCalled
     private static void registerSpecialModels(ClientPlatformHelper.SpecialModelEvent event) {
         event.register(LABEL_MODEL);
     }
 
-    @EventCalled
     private static void registerEntityRenderers(ClientPlatformHelper.EntityRendererEvent event) {
         //entities
         event.register(LabelsMod.LABEL.get(), LabelEntityRenderer::new);

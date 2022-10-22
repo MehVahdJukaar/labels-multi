@@ -4,6 +4,7 @@
   "package": "net.mehvahdjukaar.labels.mixins.fabric",
   "compatibilityLevel": "JAVA_17",
   "client": [
+    "ModelBakeryMixin"
   ],
   "mixins": [
   ],

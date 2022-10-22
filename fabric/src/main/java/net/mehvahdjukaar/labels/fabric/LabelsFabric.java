@@ -1,11 +1,11 @@
 package net.mehvahdjukaar.labels.fabric;
 
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.mehvahdjukaar.labels.LabelsMod;
 import net.mehvahdjukaar.labels.LabelsModClient;
-import net.mehvahdjukaar.moonlight.api.platform.PlatformHelper;
-import net.mehvahdjukaar.moonlight.fabric.FabricSetupCallbacks;
+import net.mehvahdjukaar.moonlight2.api.platform.PlatformHelper;
+import net.mehvahdjukaar.moonlight2.api.platform.fabric.RegHelperImpl;
+
 
 public class LabelsFabric implements ModInitializer {
 
@@ -14,8 +14,12 @@ public class LabelsFabric implements ModInitializer {
 
         LabelsMod.commonInit();
 
+
+        //registers stuff
+        RegHelperImpl.registerEntries();
+
         if (PlatformHelper.getEnv().isClient()) {
-            FabricSetupCallbacks.CLIENT_SETUP.add(LabelsModClient::init);
+            LabelsModClient.init();
         }
     }
 }

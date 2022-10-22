@@ -1,11 +1,9 @@
 package net.mehvahdjukaar.labels;
 
-import net.mehvahdjukaar.moonlight.api.client.texture_renderer.RenderedTexturesManager;
-import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigBuilder;
-import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigSpec;
-import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigType;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.monster.Slime;
+import net.mehvahdjukaar.moonlight2.api.client.texture_renderer.RenderedTexturesManager;
+import net.mehvahdjukaar.moonlight2.api.platform.configs.ConfigBuilder;
+import net.mehvahdjukaar.moonlight2.api.platform.configs.ConfigSpec;
+import net.mehvahdjukaar.moonlight2.api.platform.configs.ConfigType;
 
 import java.util.function.Supplier;
 

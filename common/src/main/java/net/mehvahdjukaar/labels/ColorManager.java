@@ -1,8 +1,8 @@
 package net.mehvahdjukaar.labels;
 
 import com.mojang.datafixers.util.Pair;
-import net.mehvahdjukaar.moonlight.api.client.GenericSimpleResourceReloadListener;
-import net.mehvahdjukaar.moonlight.api.resources.textures.SpriteUtils;
+import net.mehvahdjukaar.moonlight2.api.client.GenericSimpleResourceReloadListener;
+import net.mehvahdjukaar.moonlight2.api.resources.textures.SpriteUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.profiling.ProfilerFiller;

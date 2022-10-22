@@ -1,8 +1,7 @@
 package net.mehvahdjukaar.labels;
 
-import net.mehvahdjukaar.moonlight.api.platform.ClientPlatformHelper;
-import net.mehvahdjukaar.moonlight.api.platform.PlatformHelper;
-import net.mehvahdjukaar.moonlight.api.platform.RegHelper;
+import net.mehvahdjukaar.moonlight2.api.platform.PlatformHelper;
+import net.mehvahdjukaar.moonlight2.api.platform.RegHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -29,6 +28,7 @@ public class LabelsMod {
     }
 
     public static void commonInit() {
+
 
     }
 

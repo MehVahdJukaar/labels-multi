@@ -1,11 +1,11 @@
 package net.mehvahdjukaar.labels;
 
 import com.google.common.math.DoubleMath;
-import net.mehvahdjukaar.moonlight.api.platform.ForgeHelper;
-import net.mehvahdjukaar.moonlight.api.util.Utils;
+import net.mehvahdjukaar.moonlight2.api.platform.ForgeHelper;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
@@ -37,8 +37,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-
 public class LabelEntity extends HangingEntity {
 
     private static final EntityDataAccessor<ItemStack> DATA_ITEM = SynchedEntityData.defineId(LabelEntity.class,
@@ -68,7 +66,7 @@ public class LabelEntity extends HangingEntity {
     //might as well use this
     @Override
     public Packet<?> getAddEntityPacket() {
-        return new ClientboundAddEntityPacket(this, this.direction.get2DDataValue(), this.getPos());
+        return new ClientboundAddEntityPacket(this, this.getType(), this.direction.get2DDataValue(), this.getPos());
     }
 
     @Override
@@ -145,7 +143,7 @@ public class LabelEntity extends HangingEntity {
     }
 
     private void recomputeTexture(ItemStack itemstack) {
-        String s = Utils.getID(itemstack.getItem()).toString().replace(":", "/");
+        String s = Registry.ITEM.getKey(itemstack.getItem()).toString().replace(":", "/");
         var color = this.getColor();
         if (color != null) s += "_" + color.getName();
         this.textureId = LabelsMod.res(s);
