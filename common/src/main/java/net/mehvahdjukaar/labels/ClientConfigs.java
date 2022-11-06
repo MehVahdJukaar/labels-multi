@@ -4,8 +4,6 @@ import net.mehvahdjukaar.moonlight.api.client.texture_renderer.RenderedTexturesM
 import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigBuilder;
 import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigSpec;
 import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigType;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.monster.Slime;
 
 import java.util.function.Supplier;
 
@@ -72,10 +70,10 @@ public class ClientConfigs {
                 .define("limit_palette", true);
         OUTLINE = builder.comment("Adds an outline to label images").define("outline", true);
         builder.pop();
-
         builder.onChange(RenderedTexturesManager::clearCache);
 
         CONFIG_SPEC = builder.buildAndRegister();
+        CONFIG_SPEC.loadFromFile();
     }
 
 }

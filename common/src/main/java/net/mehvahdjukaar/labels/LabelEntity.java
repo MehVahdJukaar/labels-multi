@@ -37,8 +37,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-
 public class LabelEntity extends HangingEntity {
 
     private static final EntityDataAccessor<ItemStack> DATA_ITEM = SynchedEntityData.defineId(LabelEntity.class,
@@ -103,10 +101,8 @@ public class LabelEntity extends HangingEntity {
     public void dropItem(@Nullable Entity entity) {
         if (this.level.getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
             this.playSound(SoundEvents.PAINTING_BREAK, 1.0F, 1.0F);
-            if (entity instanceof Player player) {
-                if (!player.getAbilities().instabuild) {
-                    this.spawnAtLocation(LabelsMod.LABEL_ITEM.get());
-                }
+            if (!(entity instanceof Player player) || !player.getAbilities().instabuild) {
+                this.spawnAtLocation(LabelsMod.LABEL_ITEM.get());
             }
         }
     }
@@ -179,7 +175,7 @@ public class LabelEntity extends HangingEntity {
         this.setDirection(Direction.from2DDataValue(tag.getByte("Facing")));
         this.getEntityData().set(DATA_GLOWING, tag.getBoolean("Glowing"));
         if (tag.contains("DyeColor")) {
-            this.getEntityData().set(DATA_DYE_COLOR,tag.getByte("DyeColor"));
+            this.getEntityData().set(DATA_DYE_COLOR, tag.getByte("DyeColor"));
         }
     }
 
