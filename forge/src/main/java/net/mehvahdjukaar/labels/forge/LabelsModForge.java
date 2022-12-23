@@ -16,6 +16,7 @@ import net.minecraft.world.level.LevelReader;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.server.ServerAboutToStartEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.network.NetworkHooks;
 
 /**
  * Author: MehVahdJukaar

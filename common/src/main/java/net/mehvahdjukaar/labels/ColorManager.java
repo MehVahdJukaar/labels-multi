@@ -7,6 +7,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.level.block.CraftingTableBlock;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -39,11 +40,17 @@ public class ColorManager extends GenericSimpleResourceReloadListener {
         for (var res : locations) {
             if(res.getPath().equals(s.getName())) {
                 var l = SpriteUtils.parsePaletteStrip(manager,
-                        new ResourceLocation(res.getNamespace(), "textures/entity/"+res.getPath()+"label_colors.png"), 32 + 2);
+                        new ResourceLocation(res.getNamespace(), "textures/entity/"+res.getPath()+"label_colors.png"),
+                        32 + 2);
                 var i = l.iterator();
                 COLORS.put(null, Pair.of(i.next(), i.next()));
                 for (var d : DyeColor.values()) {
-                    COLORS.put(d, Pair.of(i.next(), i.next()));
+                    if(i.hasNext()) {
+                        COLORS.put(d, Pair.of(i.next(), i.next()));
+                    }else{
+                        //default for tinted
+                        COLORS.put(d, Pair.of(d.getFireworkColor(), d.getTextColor()));
+                    }
                 }
             }
         }
