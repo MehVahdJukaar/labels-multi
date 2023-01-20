@@ -90,7 +90,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
 
             if (tex.isInitialized()) {
 
-                boolean hasText = ClientConfigs.HAS_TEXT.get();
+                boolean hasText = entity.hasText();
 
                 //if(entity.hasGlowInk())
                 //buffer = Minecraft.getInstance().renderBuffers().outlineBufferSource();

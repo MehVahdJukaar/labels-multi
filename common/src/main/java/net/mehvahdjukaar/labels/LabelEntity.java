@@ -45,6 +45,8 @@ public class LabelEntity extends HangingEntity {
             EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Boolean> DATA_GLOWING = SynchedEntityData.defineId(LabelEntity.class,
             EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> DATA_TEXT = SynchedEntityData.defineId(LabelEntity.class,
+            EntityDataSerializers.BOOLEAN);
 
     //client
     private boolean needsVisualRefresh = true;
@@ -80,6 +82,7 @@ public class LabelEntity extends HangingEntity {
         this.entityData.define(DATA_ITEM, ItemStack.EMPTY);
         this.entityData.define(DATA_DYE_COLOR, (byte) -1);
         this.entityData.define(DATA_GLOWING, false);
+        this.entityData.define(DATA_TEXT, false);
     }
 
     @Override
@@ -155,6 +158,7 @@ public class LabelEntity extends HangingEntity {
         }
         tag.putByte("Facing", (byte) this.direction.get2DDataValue());
         tag.putBoolean("Glowing", this.hasGlowInk());
+        tag.putBoolean("Text", this.hasText());
         var c = this.getColor();
         if (c != null) {
             tag.putByte("DyeColor", (byte) c.ordinal());
@@ -174,6 +178,7 @@ public class LabelEntity extends HangingEntity {
         }
         this.setDirection(Direction.from2DDataValue(tag.getByte("Facing")));
         this.getEntityData().set(DATA_GLOWING, tag.getBoolean("Glowing"));
+        this.getEntityData().set(DATA_TEXT, tag.getBoolean("Text"));
         if (tag.contains("DyeColor")) {
             this.getEntityData().set(DATA_DYE_COLOR, tag.getByte("DyeColor"));
         }
@@ -260,9 +265,14 @@ public class LabelEntity extends HangingEntity {
             }
             return InteractionResult.sidedSuccess(player.level.isClientSide);
         } else {
+            boolean consume = true;
             boolean success = false;
             boolean glowInk = this.hasGlowInk();
-            if (itemstack.getItem() == Items.GLOW_INK_SAC && !glowInk) {
+            if (itemstack.getItem() == Items.FEATHER) {
+                this.cycleText();
+                consume = false;
+                success = true;
+            } else if (itemstack.getItem() == Items.GLOW_INK_SAC && !glowInk) {
                 level.playSound(null, pos, SoundEvents.GLOW_INK_SAC_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
                 this.getEntityData().set(DATA_GLOWING, true);
                 success = true;
@@ -278,7 +288,7 @@ public class LabelEntity extends HangingEntity {
                 success = true;
             }
             if (success) {
-                if (!player.isCreative()) {
+                if (consume && !player.isCreative()) {
                     itemstack.shrink(1);
                 }
                 if (player instanceof ServerPlayer serverPlayer) {
@@ -297,6 +307,10 @@ public class LabelEntity extends HangingEntity {
                 return InteractionResult.SUCCESS;
             }
         }
+    }
+
+    private void cycleText() {
+        this.getEntityData().set(DATA_TEXT, !this.getEntityData().get(DATA_TEXT));
     }
 
     @Override
@@ -354,6 +368,10 @@ public class LabelEntity extends HangingEntity {
 
     public boolean hasGlowInk() {
         return this.getEntityData().get(DATA_GLOWING);
+    }
+
+    public boolean hasText() {
+        return this.getEntityData().get(DATA_TEXT);
     }
 
     @Nullable
