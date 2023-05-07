@@ -5,6 +5,7 @@ import net.mehvahdjukaar.moonlight.api.client.GenericSimpleResourceReloadListene
 import net.mehvahdjukaar.moonlight.api.resources.textures.SpriteUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.FastColor;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.item.DyeColor;
 
@@ -48,7 +49,13 @@ public class ColorManager extends GenericSimpleResourceReloadListener {
                         COLORS.put(d, Pair.of(i.next(), i.next()));
                     } else {
                         //default for tinted
-                        COLORS.put(d, Pair.of(d.getFireworkColor(), d.getTextColor()));
+                        int first = d.getFireworkColor();
+                        int second = d.getTextColor();
+                        if (first == second) second = d.getMaterialColor().col;
+                        if (first == second) {
+                            second = FastColor.ARGB32.multiply(first, 0x101010ff);
+                        }
+                        COLORS.put(d, Pair.of(first, second));
                     }
                 }
             }

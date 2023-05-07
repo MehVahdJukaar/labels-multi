@@ -107,5 +107,7 @@ dependencies {
 
     modImplementation("net.mehvahdjukaar:moonlight-forge:${project.moonlight_version}")
     modImplementation ("curse.maven:jei-238222:3884337")
+    //modImplementation("com.itayfeder.tinted:tinted-1.19.2-1.2.0")
+    //modImplementation ("curse.maven:tinted-699549:4091058")
     modImplementation ("curse.maven:configured-457570:4011355")
 }
