@@ -1,0 +1,1 @@
+- labels can be placed on ceiling and floors

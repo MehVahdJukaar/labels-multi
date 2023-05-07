@@ -1,7 +1,5 @@
 package net.mehvahdjukaar.labels;
 
-import net.mehvahdjukaar.moonlight.api.platform.ClientPlatformHelper;
-import net.mehvahdjukaar.moonlight.api.platform.PlatformHelper;
 import net.mehvahdjukaar.moonlight.api.platform.RegHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
@@ -21,6 +19,8 @@ public class LabelsMod {
 
     public static final String MOD_ID = "labels";
     public static final Logger LOGGER = LogManager.getLogger();
+
+    public static final boolean OPTIFRICK_HACK = Package.getPackage("net.optifine") != null;
 
     private static final String NAME = "label";
 

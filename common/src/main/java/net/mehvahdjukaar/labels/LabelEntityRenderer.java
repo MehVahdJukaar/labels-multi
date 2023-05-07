@@ -16,7 +16,6 @@ import net.mehvahdjukaar.moonlight.api.resources.textures.Palette;
 import net.mehvahdjukaar.moonlight.api.resources.textures.SpriteUtils;
 import net.mehvahdjukaar.moonlight.api.resources.textures.TextureImage;
 import net.mehvahdjukaar.moonlight.api.util.math.colors.BaseColor;
-import net.mehvahdjukaar.moonlight.api.util.math.colors.HCLColor;
 import net.mehvahdjukaar.moonlight.api.util.math.colors.RGBColor;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -66,11 +65,13 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
         super.render(entity, entityYaw, partialTicks, poseStack, buffer, light);
 
         //prevents incorrect rendering on first frame
-        if (entity.tickCount == 0) return;
+        if (entity.tickCount == 0 && !LabelsMod.OPTIFRICK_HACK) return;
 
         poseStack.pushPose();
         //buffer = Minecraft.getInstance().renderBuffers().outlineBufferSource();
         poseStack.mulPose(Vector3f.YP.rotationDegrees(180 - entity.getYRot()));
+        poseStack.mulPose(Vector3f.XP.rotationDegrees(entity.getXRot()));
+
         poseStack.translate(0, -0, -0.5 + 1 / 32f);
         poseStack.translate(-0.5, -0.5, -0.5);
 
@@ -111,11 +112,11 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
                 boolean glow = entity.hasGlowInk();
                 if (glow) light = LightTexture.FULL_BRIGHT;
 
-                vertexConsumer.vertex(tr, -s, -s, 0).color(1f, 1f, 1f, 1f).uv(1f, 0f).overlayCoords(overlay).uv2(light).normal(normal, 0f, 0f, 1f).endVertex();
-                vertexConsumer.vertex(tr, -s, s, 0).color(1f, 1f, 1f, 1f).uv(1f, 1f).overlayCoords(overlay).uv2(light).normal(normal, 0f, 0f, 1f).endVertex();
+                vertexConsumer.vertex(tr, -s, -s, 0).color(1f, 1f, 1f, 1f).uv(1f, 0f).overlayCoords(overlay).uv2(light).normal(normal, 0f, 0f, -1f).endVertex();
+                vertexConsumer.vertex(tr, -s, s, 0).color(1f, 1f, 1f, 1f).uv(1f, 1f).overlayCoords(overlay).uv2(light).normal(normal, 0f, 0f, -1f).endVertex();
 
-                vertexConsumer.vertex(tr, s, s, 0).color(1f, 1f, 1f, 1f).uv(0f, 1f).overlayCoords(overlay).uv2(light).normal(normal, 0f, 0f, 1f).endVertex();
-                vertexConsumer.vertex(tr, s, -s, 0).color(1f, 1f, 1f, 1f).uv(0f, 0f).overlayCoords(overlay).uv2(light).normal(normal, 0f, 0f, 1f).endVertex();
+                vertexConsumer.vertex(tr, s, s, 0).color(1f, 1f, 1f, 1f).uv(0f, 1f).overlayCoords(overlay).uv2(light).normal(normal, 0f, 0f, -1f).endVertex();
+                vertexConsumer.vertex(tr, s, -s, 0).color(1f, 1f, 1f, 1f).uv(0f, 0f).overlayCoords(overlay).uv2(light).normal(normal, 0f, 0f, -1f).endVertex();
 
                 poseStack.popPose();
 

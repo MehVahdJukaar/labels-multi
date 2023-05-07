@@ -26,15 +26,15 @@ public class LabelItem extends Item {
     public InteractionResult useOn(UseOnContext pContext) {
         BlockPos blockpos = pContext.getClickedPos();
         Direction direction = pContext.getClickedFace();
-        BlockPos relative = blockpos.relative(direction);
+        Direction facing = pContext.getHorizontalDirection();
         Player player = pContext.getPlayer();
         ItemStack itemstack = pContext.getItemInHand();
-        if (player != null && !this.mayPlace(player, direction, itemstack, relative)) {
+        if (player != null && !player.mayUseItemAt(blockpos, direction, itemstack)) {
             return InteractionResult.FAIL;
         } else {
             Level level = pContext.getLevel();
 
-            LabelEntity label = new LabelEntity(level, blockpos, direction);
+            LabelEntity label = new LabelEntity(level, blockpos, direction,facing);
 
             CompoundTag compoundtag = itemstack.getTag();
             if (compoundtag != null) {
@@ -53,10 +53,6 @@ public class LabelItem extends Item {
             }
         }
         return InteractionResult.FAIL;
-    }
-
-    protected boolean mayPlace(Player pPlayer, Direction pDirection, ItemStack pHangingEntityStack, BlockPos pPos) {
-        return !pDirection.getAxis().isVertical() && pPlayer.mayUseItemAt(pPos, pDirection, pHangingEntityStack);
     }
 
     @Override

@@ -25,6 +25,7 @@ import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.decoration.HangingEntity;
+import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
@@ -32,6 +33,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -48,6 +50,8 @@ public class LabelEntity extends HangingEntity {
     private static final EntityDataAccessor<Boolean> DATA_TEXT = SynchedEntityData.defineId(LabelEntity.class,
             EntityDataSerializers.BOOLEAN);
 
+    private AttachFace attachFace = AttachFace.WALL;
+
     //client
     private boolean needsVisualRefresh = true;
     @Nullable
@@ -55,26 +59,54 @@ public class LabelEntity extends HangingEntity {
     private float scale;
     private FormattedCharSequence[] labelText;
 
+
     public LabelEntity(EntityType<? extends HangingEntity> entityType, Level world) {
         super(entityType, world);
     }
 
-    public LabelEntity(Level level, BlockPos pos, Direction direction) {
+    public LabelEntity(Level level, BlockPos pos, Direction clickedFace, Direction horizontalFacing) {
         super(LabelsMod.LABEL.get(), level, pos);
-        this.setDirection(direction);
+        if (clickedFace.getAxis().isHorizontal()) {
+            this.setOrientation(clickedFace,AttachFace.WALL); //clickedFace is used for horizontal clickedFace
+        } else {
+            this.setOrientation(horizontalFacing.getOpposite(), clickedFace == Direction.UP ? AttachFace.FLOOR : AttachFace.CEILING);
+        }
         this.setPos(pos.getX(), pos.getY(), pos.getZ());
+    }
+
+
+    public void setOrientation(Direction horizontalOrientation, AttachFace face) {
+        this.attachFace = face;
+        super.setDirection(horizontalOrientation);
+        if(face != AttachFace.WALL) {
+            this.setXRot(90f * (face == AttachFace.FLOOR ? 1 : -1));
+            this.setYRot((horizontalOrientation.get2DDataValue() * 90));
+            this.xRotO = this.getXRot();
+            this.yRotO = this.getYRot();
+        }
+    }
+
+    //item frame code
+    @Deprecated(since = "use the one with 2 param")
+    @Override
+    protected void setDirection(Direction facingDirection) {
+        super.setDirection(facingDirection);
     }
 
     //might as well use this
     @Override
     public Packet<?> getAddEntityPacket() {
-        return new ClientboundAddEntityPacket(this, this.direction.get2DDataValue(), this.getPos());
+        return new ClientboundAddEntityPacket(this,
+                ((this.direction.get2DDataValue() & 0b1111) << 4) | (this.attachFace.ordinal() & 0b1111),
+                this.getPos());
     }
 
     @Override
     public void recreateFromPacket(ClientboundAddEntityPacket pPacket) {
         super.recreateFromPacket(pPacket);
-        this.setDirection(Direction.from2DDataValue(pPacket.getData()));
+        int data = pPacket.getData();
+        this.setOrientation(Direction.from2DDataValue((data >> 4) & 0b1111),
+                AttachFace.values()[data & 0b1111]);
     }
 
     @Override
@@ -157,6 +189,7 @@ public class LabelEntity extends HangingEntity {
             tag.put("Item", this.getItem().save(new CompoundTag()));
         }
         tag.putByte("Facing", (byte) this.direction.get2DDataValue());
+        tag.putByte("AttachFace", (byte) this.attachFace.ordinal());
         tag.putBoolean("Glowing", this.hasGlowInk());
         tag.putBoolean("Text", this.hasText());
         var c = this.getColor();
@@ -176,12 +209,14 @@ public class LabelEntity extends HangingEntity {
             }
             this.setItem(itemstack);
         }
-        this.setDirection(Direction.from2DDataValue(tag.getByte("Facing")));
+        this.setOrientation(Direction.from2DDataValue(tag.getByte("Facing")),
+                AttachFace.values()[tag.getByte("AttachFace")]);
         this.getEntityData().set(DATA_GLOWING, tag.getBoolean("Glowing"));
         this.getEntityData().set(DATA_TEXT, tag.getBoolean("Text"));
         if (tag.contains("DyeColor")) {
             this.getEntityData().set(DATA_DYE_COLOR, tag.getByte("DyeColor"));
         }
+
     }
 
     @Override
@@ -200,8 +235,6 @@ public class LabelEntity extends HangingEntity {
     protected void recalculateBoundingBox() {
         if (this.direction != null) {
 
-            BlockPos pos = this.pos;
-
             var shape = level.getBlockState(pos).getBlockSupportShape(level, pos);
             if (shape.isEmpty()) {
                 var vv = Vec3.atCenterOf(pos);
@@ -209,15 +242,17 @@ public class LabelEntity extends HangingEntity {
                 return; //wait for survives to be called so this will be removed
             }
             double offset;
-            if (direction.getAxisDirection() == Direction.AxisDirection.POSITIVE) {
-                offset = -0.5 + shape.max(direction.getAxis());
+            Direction dir = this.getBehindDirection();
+
+            if (dir.getAxisDirection() != Direction.AxisDirection.POSITIVE) {
+                offset = 0.5 - shape.max(dir.getAxis());
             } else {
-                offset = 0.5 - shape.min(direction.getAxis());
+                offset = -0.5 + shape.min(dir.getAxis());
             }
             Vec3 v = Vec3.atCenterOf(pos);
-            offset += 1 / 32f;
+            offset -= 1 / 32f;
 
-            v = v.add(direction.getStepX() * offset, direction.getStepY() * offset, direction.getStepZ() * offset);
+            v = v.add(dir.getStepX() * offset, dir.getStepY() * offset, dir.getStepZ() * offset);
 
             this.setPosRaw(v.x, v.y, v.z);
 
@@ -228,7 +263,7 @@ public class LabelEntity extends HangingEntity {
             double width = this.getWidth();
             double height = this.getHeight();
             double zWidth = this.getWidth();
-            Direction.Axis axis = this.direction.getAxis();
+            Direction.Axis axis = dir.getAxis();
             switch (axis) {
                 case X -> width = 1.0D;
                 case Y -> height = 1.0D;
@@ -243,12 +278,8 @@ public class LabelEntity extends HangingEntity {
     }
 
     public BlockPos getSupportingBlockPos() {
-        return switch (this.getDirection()) {
-            default -> new BlockPos(this.position().add(0, 0, 0.05));
-            case SOUTH -> new BlockPos(this.position().add(0, 0, -0.05));
-            case WEST -> new BlockPos(this.position().add(0.05, 0, 0));
-            case EAST -> new BlockPos(this.position().add(-0.05, 0, 0));
-        };
+        Direction behind = this.getBehindDirection();
+        return new BlockPos(this.position().relative(behind, 0.05));
     }
 
     @Override
@@ -319,7 +350,7 @@ public class LabelEntity extends HangingEntity {
             return false;
         }
         BlockPos pos = getSupportingBlockPos();
-        Direction dir = this.getDirection();
+        Direction behindDIr = this.getBehindDirection();
         BlockState state = this.level.getBlockState(pos);
         var blockShape = state.getBlockSupportShape(level, pos);
         if (blockShape.isEmpty() || !state.getMaterial().isSolid()) {
@@ -327,14 +358,24 @@ public class LabelEntity extends HangingEntity {
         }
         var bbShape = this.getBoundingBox().move(-Mth.floor(this.getX()), -Mth.floor(this.getY()), -Mth.floor(this.getZ()));
 
-        if (dir.getAxisDirection() != Direction.AxisDirection.POSITIVE) {
-            if (!DoubleMath.fuzzyEquals(bbShape.max(dir.getAxis()), bbShape.max(dir.getAxis()), 1.0E-7)) return false;
+        if (behindDIr.getAxisDirection() == Direction.AxisDirection.POSITIVE) {
+            if (!DoubleMath.fuzzyEquals(bbShape.max(behindDIr.getAxis()), bbShape.max(behindDIr.getAxis()), 1.0E-7))
+                return false;
         } else {
-            if (!DoubleMath.fuzzyEquals(bbShape.min(dir.getAxis()), bbShape.min(dir.getAxis()), 1.0E-7)) return false;
+            if (!DoubleMath.fuzzyEquals(bbShape.min(behindDIr.getAxis()), bbShape.min(behindDIr.getAxis()), 1.0E-7))
+                return false;
         }
 
         return this.level.getEntities(this, this.getBoundingBox(), HANGING_ENTITY).isEmpty();
 
+    }
+
+    private Direction getBehindDirection() {
+        return switch (attachFace) {
+            case WALL -> direction.getOpposite();
+            case FLOOR -> Direction.DOWN;
+            case CEILING -> Direction.UP;
+        };
     }
 
     public boolean needsVisualUpdate() {
@@ -376,7 +417,7 @@ public class LabelEntity extends HangingEntity {
 
     @Nullable
     public DyeColor getColor() {
-        var i = this.getEntityData().get(DATA_DYE_COLOR);
+        byte i = this.getEntityData().get(DATA_DYE_COLOR);
         return i == -1 ? null : DyeColor.byId(i);
     }
 }

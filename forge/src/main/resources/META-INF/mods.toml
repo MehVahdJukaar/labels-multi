@@ -28,7 +28,7 @@ issueTrackerURL = "https://github.com/MehVahdJukaar/labels-multi/issues"
     Label everything!
     '''
 
-[modproperties.label]
+[modproperties.labels]
     catalogueItemIcon="labels:label"
     configuredBackground = "minecraft:textures/block/spruce_planks.png"
 
