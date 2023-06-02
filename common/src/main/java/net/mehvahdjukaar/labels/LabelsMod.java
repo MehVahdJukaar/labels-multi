@@ -5,8 +5,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
-import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -18,7 +19,7 @@ import java.util.function.Supplier;
 public class LabelsMod {
 
     public static final String MOD_ID = "labels";
-    public static final Logger LOGGER = LogManager.getLogger();
+    public static final Logger LOGGER = LogManager.getLogger("Labels");
 
     public static final boolean OPTIFRICK_HACK = Package.getPackage("net.optifine") != null;
 
@@ -29,7 +30,9 @@ public class LabelsMod {
     }
 
     public static void commonInit() {
-
+        RegHelper.addItemsToTabsRegistration(e -> {
+            e.addBefore(CreativeModeTabs.FUNCTIONAL_BLOCKS, i -> i.is(Items.ITEM_FRAME), LABEL_ITEM.get());
+        });
     }
 
     public static final Supplier<EntityType<LabelEntity>> LABEL =
@@ -38,8 +41,7 @@ public class LabelsMod {
                             .sized(0.5F, 0.5F).clientTrackingRange(10).updateInterval(Integer.MAX_VALUE))
             );
 
-    public static final Supplier<Item> LABEL_ITEM = regItem(NAME, () -> new LabelItem(new Item.Properties()
-            .tab(CreativeModeTab.TAB_DECORATIONS)));
+    public static final Supplier<Item> LABEL_ITEM = regItem(NAME, () -> new LabelItem(new Item.Properties()));
 
 
     public static <T extends Entity> Supplier<EntityType<T>> regEntity(String name, Supplier<EntityType.Builder<T>> builder) {

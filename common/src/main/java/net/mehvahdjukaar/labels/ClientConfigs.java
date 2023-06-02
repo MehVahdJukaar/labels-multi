@@ -1,6 +1,7 @@
 package net.mehvahdjukaar.labels;
 
 import net.mehvahdjukaar.moonlight.api.client.texture_renderer.RenderedTexturesManager;
+import net.mehvahdjukaar.moonlight.api.platform.PlatHelper;
 import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigBuilder;
 import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigSpec;
 import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigType;
@@ -13,14 +14,14 @@ public class ClientConfigs {
 
     }
 
-    public static ConfigSpec CONFIG_SPEC;
+    public static final ConfigSpec CONFIG_SPEC;
 
-    public static Supplier<Boolean> COLORED_TEXT;
-    public static Supplier<Boolean> OUTLINE;
-    public static Supplier<Boolean> IS_RECOLORED;
-    public static Supplier<Boolean> REDUCE_COLORS;
-    public static Supplier<Integer> TEXTURE_SIZE;
-    public static Supplier<Preset> COLOR_PRESET;
+    public static final Supplier<Boolean> COLORED_TEXT;
+    public static final Supplier<Boolean> OUTLINE;
+    public static final Supplier<Boolean> IS_RECOLORED;
+    public static final Supplier<Boolean> REDUCE_COLORS;
+    public static final Supplier<Integer> TEXTURE_SIZE;
+    public static final Supplier<Preset> COLOR_PRESET;
 
     public enum Preset {
         DEFAULT(""),
@@ -40,6 +41,10 @@ public class ClientConfigs {
     }
 
     static {
+        if(PlatHelper.getPhysicalSide().isServer() && PlatHelper.isDev()){
+            throw new AssertionError("Tried to load client configs on server side");
+        }
+
         ConfigBuilder builder = ConfigBuilder.create(LabelsMod.res("client"), ConfigType.CLIENT);
 
         builder.push("general");

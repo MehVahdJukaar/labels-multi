@@ -8,6 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -95,7 +96,7 @@ public class LabelEntity extends HangingEntity {
 
     //might as well use this
     @Override
-    public Packet<?> getAddEntityPacket() {
+    public Packet<ClientGamePacketListener> getAddEntityPacket() {
         return new ClientboundAddEntityPacket(this,
                 ((this.direction.get2DDataValue() & 0b1111) << 4) | (this.attachFace.ordinal() & 0b1111),
                 this.getPos());
@@ -279,7 +280,7 @@ public class LabelEntity extends HangingEntity {
 
     public BlockPos getSupportingBlockPos() {
         Direction behind = this.getBehindDirection();
-        return new BlockPos(this.position().relative(behind, 0.05));
+        return BlockPos.containing(this.position().relative(behind, 0.05));
     }
 
     @Override

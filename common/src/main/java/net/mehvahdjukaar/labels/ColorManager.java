@@ -1,7 +1,7 @@
 package net.mehvahdjukaar.labels;
 
 import com.mojang.datafixers.util.Pair;
-import net.mehvahdjukaar.moonlight.api.client.GenericSimpleResourceReloadListener;
+import net.mehvahdjukaar.moonlight.api.misc.GenericSimpleResourceReloadListener;
 import net.mehvahdjukaar.moonlight.api.resources.textures.SpriteUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -15,8 +15,6 @@ import java.util.List;
 import java.util.Map;
 
 public class ColorManager extends GenericSimpleResourceReloadListener {
-
-    public static final ColorManager RELOAD_INSTANCE = new ColorManager();
 
     private static final Map<DyeColor, Pair<Integer, Integer>> COLORS = new HashMap<>();
 

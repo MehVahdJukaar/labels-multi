@@ -4,14 +4,12 @@ import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.datafixers.util.Pair;
-import com.mojang.math.Matrix3f;
-import com.mojang.math.Matrix4f;
-import com.mojang.math.Vector3f;
+import com.mojang.math.Axis;
 import net.mehvahdjukaar.moonlight.api.client.texture_renderer.FrameBufferBackedDynamicTexture;
 import net.mehvahdjukaar.moonlight.api.client.texture_renderer.RenderedTexturesManager;
 import net.mehvahdjukaar.moonlight.api.client.util.LOD;
 import net.mehvahdjukaar.moonlight.api.client.util.TextUtil;
-import net.mehvahdjukaar.moonlight.api.platform.ClientPlatformHelper;
+import net.mehvahdjukaar.moonlight.api.platform.ClientHelper;
 import net.mehvahdjukaar.moonlight.api.resources.textures.Palette;
 import net.mehvahdjukaar.moonlight.api.resources.textures.SpriteUtils;
 import net.mehvahdjukaar.moonlight.api.resources.textures.TextureImage;
@@ -39,10 +37,12 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.UnaryOperator;
+import java.util.function.IntUnaryOperator;
 
 
 public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
@@ -69,14 +69,14 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
 
         poseStack.pushPose();
         //buffer = Minecraft.getInstance().renderBuffers().outlineBufferSource();
-        poseStack.mulPose(Vector3f.YP.rotationDegrees(180 - entity.getYRot()));
-        poseStack.mulPose(Vector3f.XP.rotationDegrees(entity.getXRot()));
+        poseStack.mulPose(Axis.YP.rotationDegrees(180 - entity.getYRot()));
+        poseStack.mulPose(Axis.XP.rotationDegrees(entity.getXRot()));
 
         poseStack.translate(0, -0, -0.5 + 1 / 32f);
         poseStack.translate(-0.5, -0.5, -0.5);
 
         modelRenderer.renderModel(poseStack.last(), buffer.getBuffer(Sheets.cutoutBlockSheet()), //
-                null, ClientPlatformHelper.getModel(modelManager, LabelsModClient.LABEL_MODEL), 1.0F, 1.0F, 1.0F,
+                null, ClientHelper.getModel(modelManager, LabelsModClient.LABEL_MODEL), 1.0F, 1.0F, 1.0F,
                 light, OverlayTexture.NO_OVERLAY);
 
         Item item = entity.getItem().getItem();
@@ -180,7 +180,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
         if (reduceColors) {
             //reduce main image colors
             int cutoff = 11;
-            UnaryOperator<Integer> fn = i -> {
+            IntUnaryOperator fn = i -> {
                 if (i < cutoff) return i;
                 else return (int) (Math.pow(i - cutoff + 1, 1 / 3f) + cutoff - 1);
             };
@@ -191,7 +191,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
             //reduce outline colors
             if (outlineTexture != null) {
                 int maxOutlineColors = 3;
-                SpriteUtils.reduceColors(outlineTexture.getImage(), j -> Math.min(j, maxOutlineColors));
+                SpriteUtils.reduceColors(outlineTexture.getImage(), (IntUnaryOperator) j -> Math.min(j, maxOutlineColors));
             }
         }
 
@@ -201,52 +201,25 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
             BaseColor<?> dark = new RGBColor(ColorManager.getDark(tint));
             BaseColor<?> light = new RGBColor(ColorManager.getLight(tint));
 
-            if(ClientConfigs.COLOR_PRESET.get() != ClientConfigs.Preset.DEFAULT){
+            if (ClientConfigs.COLOR_PRESET.get() != ClientConfigs.Preset.DEFAULT) {
                 dark = dark.asHCL();
                 light = light.asHCL();
-            }
-
-            if (tint != null && false) {
-                //use text color
-                var v = new TextUtil.RenderTextProperties(tint, true, LightTexture.FULL_BRIGHT, Style.EMPTY, () -> true);
-                var dc = v.darkenedColor();
-                var lc = tint.getTextColor();
-                if (dc != lc) {
-                 //   dark = new RGBColor((dc >> 16 & 0xFF) / 255.0F, (dc >> 8 & 0xFF) / 255.0F, (dc & 0xFF) / 255.0F, 1).asHCL();
-                 //   light = new RGBColor((lc >> 16 & 0xFF) / 255.0F, (lc >> 8 & 0xFF) / 255.0F, (lc & 0xFF) / 255.0F, 1).asHCL();
-               }
-
-                //  if (!vv.equals(light)) dark = vv;
-                //getMaterialColor().calculateRGBColor(MaterialColor.Brightness.HIGH)
-                //var f = tint.getTextureDiffuseColors();
-                //var l = new RGBColor(f[0],f[1],f[2],1);
-                // var d = new RGBColor( tint.getMaterialColor().calculateRGBColor(MaterialColor.Brightness.LOW));
-                //dark = dark.asRGB().mixWith(new RGBColor(ColorManager.getDark(null)), 0.7f).asHCL();
-                //light = light.asRGB().mixWith(l, 0.7f).asHCL();
-
-                // dark = dark.withLuminance(dark.luminance() * 0.8f);
-                // light = light.withLuminance(light.luminance() * 0.8f + 0.2f);
-                //light = light.withHue(light.hue() * 0.95f);
-                //dark = dark.withHue(dark.hue() * 0.95f + 0.05f);
-                // dark = RGBColor.averageColors(dark.asRGB(), d).asHCL();
-                // light = RGBColor.averageColors(light.asRGB(), d).asHCL();
             }
 
             Palette old = Palette.fromImage(originalTexture, null, 0);
             int s = old.size();
             Palette newPalette;
             if (s < 3) {
-                newPalette = Palette.ofColors(List.of(light, dark));
+                newPalette = Palette.ofColors(List.of(light.asRGB(), dark.asRGB()));
             } else {
-                newPalette = Palette.fromArc((BaseColor)light,(BaseColor) dark, s + (outline ? 2 : 0));
+                newPalette = Palette.fromArc(light.asRGB(), dark.asRGB(), s + (outline ? 2 : 0));
             }
 
             if (outline) {
                 Palette newOutlinePalette;
                 if (newPalette.size() > 4) {
                     //split palette to use some colors for outline
-                    newOutlinePalette = Palette.ofColors(List.of());
-                    newOutlinePalette.add(newPalette.remove(0));
+                    newOutlinePalette = Palette.ofColors(List.of(newPalette.remove(0).rgb()));
                     var v = newPalette.remove(0);
                     newOutlinePalette.add(v);
                     newOutlinePalette.add(newPalette.getDarkest()); //they'll have 1 shared color
