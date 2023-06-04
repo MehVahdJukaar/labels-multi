@@ -1,1 +1,1 @@
-- labels can be placed on ceiling and floors
+- fixed texture being purple
