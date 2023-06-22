@@ -290,7 +290,8 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
         }
 
         TextUtil.renderAllLines(tempPageLines, 10, font, matrixStack, buffer,
-                new TextUtil.RenderTextProperties(c, glow, light, Style.EMPTY,
+                TextUtil.renderProperties(c, glow,1.5f,  light, Style.EMPTY,
+                        entity.getDirection().step(),
                         () -> new LOD(camera, entity.getPos()).isVeryNear()));
 
         matrixStack.popPose();

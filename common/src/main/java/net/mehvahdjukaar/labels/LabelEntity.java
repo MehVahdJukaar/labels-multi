@@ -29,12 +29,14 @@ import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.ItemFrameItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
+import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -135,7 +137,7 @@ public class LabelEntity extends HangingEntity {
 
     @Override
     public void dropItem(@Nullable Entity entity) {
-        if (this.level.getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
+        if (this.level().getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
             this.playSound(SoundEvents.PAINTING_BREAK, 1.0F, 1.0F);
             if (!(entity instanceof Player player) || !player.getAbilities().instabuild) {
                 this.spawnAtLocation(LabelsMod.LABEL_ITEM.get());
@@ -236,6 +238,7 @@ public class LabelEntity extends HangingEntity {
     protected void recalculateBoundingBox() {
         if (this.direction != null) {
 
+            Level level = level();
             var shape = level.getBlockState(pos).getBlockSupportShape(level, pos);
             if (shape.isEmpty()) {
                 var vv = Vec3.atCenterOf(pos);
@@ -288,14 +291,16 @@ public class LabelEntity extends HangingEntity {
         if (this.isRemoved()) return InteractionResult.PASS;
         ItemStack itemstack = player.getItemInHand(hand);
 
+        Level level = this.level();
         if (player.isSecondaryUseActive() && !itemstack.isEmpty()) {
-            if (!this.level.isClientSide) {
+            if (!level.isClientSide) {
                 this.setItem(itemstack);
                 if (!itemstack.isEmpty()) {
                     this.playSound(SoundEvents.INK_SAC_USE, 1.0F, 1.0F);
                 }
             }
-            return InteractionResult.sidedSuccess(player.level.isClientSide);
+            this.gameEvent(GameEvent.BLOCK_CHANGE, player);
+            return InteractionResult.sidedSuccess(level.isClientSide);
         } else {
             boolean consume = true;
             boolean success = false;
@@ -312,12 +317,15 @@ public class LabelEntity extends HangingEntity {
                 level.playSound(null, pos, SoundEvents.INK_SAC_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
                 this.getEntityData().set(DATA_GLOWING, false);
                 success = true;
-            } else if (ForgeHelper.getColor(itemstack) != null) {
-                level.playSound(null, pos, SoundEvents.DYE_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
+            }
+            if (!success) {
                 var color = ForgeHelper.getColor(itemstack);
-                this.getEntityData().set(DATA_DYE_COLOR, (byte) (color == null ? -1 : color.ordinal()));
-                this.recomputeTexture(this.getItem());
-                success = true;
+                if(color != null && color != this.getColor()) {
+                    level.playSound(null, pos, SoundEvents.DYE_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
+                    this.getEntityData().set(DATA_DYE_COLOR, (byte) (color == null ? -1 : color.ordinal()));
+                    this.recomputeTexture(this.getItem());
+                    success = true;
+                }
             }
             if (success) {
                 if (consume && !player.isCreative()) {
@@ -326,13 +334,13 @@ public class LabelEntity extends HangingEntity {
                 if (player instanceof ServerPlayer serverPlayer) {
                     CriteriaTriggers.ITEM_USED_ON_BLOCK.trigger(serverPlayer, pos, itemstack);
                 }
-
+                this.gameEvent(GameEvent.BLOCK_CHANGE, player);
                 return InteractionResult.sidedSuccess(level.isClientSide);
             }
             InteractionResult interactionresult;
             if (player instanceof ServerPlayer sp) {
                 BlockPos p = this.getSupportingBlockPos();
-                interactionresult = sp.gameMode.useItemOn(sp, sp.level, itemstack, hand,
+                interactionresult = sp.gameMode.useItemOn(sp, level, itemstack, hand,
                         new BlockHitResult(Vec3.atCenterOf(p), this.direction, p, false));
                 return interactionresult;
             } else {
@@ -347,14 +355,15 @@ public class LabelEntity extends HangingEntity {
 
     @Override
     public boolean survives() {
-        if (!this.level.noCollision(this)) {
+        Level level = this.level();
+        if (!level.noCollision(this)) {
             return false;
         }
         BlockPos pos = getSupportingBlockPos();
         Direction behindDIr = this.getBehindDirection();
-        BlockState state = this.level.getBlockState(pos);
+        BlockState state = level.getBlockState(pos);
         var blockShape = state.getBlockSupportShape(level, pos);
-        if (blockShape.isEmpty() || !state.getMaterial().isSolid()) {
+        if (blockShape.isEmpty() || !state.isSolid()) {
             return false;
         }
         var bbShape = this.getBoundingBox().move(-Mth.floor(this.getX()), -Mth.floor(this.getY()), -Mth.floor(this.getZ()));
@@ -367,7 +376,7 @@ public class LabelEntity extends HangingEntity {
                 return false;
         }
 
-        return this.level.getEntities(this, this.getBoundingBox(), HANGING_ENTITY).isEmpty();
+        return level.getEntities(this, this.getBoundingBox(), HANGING_ENTITY).isEmpty();
 
     }
 

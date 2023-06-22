@@ -1,1 +1,2 @@
-- fixed texture being purple
+- text color is not shaded!
+- fixed interacting with labels not triggering sculks

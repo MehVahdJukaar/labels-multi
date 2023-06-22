@@ -49,7 +49,7 @@ public class ColorManager extends GenericSimpleResourceReloadListener {
                         //default for tinted
                         int first = d.getFireworkColor();
                         int second = d.getTextColor();
-                        if (first == second) second = d.getMaterialColor().col;
+                        if (first == second) second = d.getMapColor().col;
                         if (first == second) {
                             second = FastColor.ARGB32.multiply(first, 0x101010ff);
                         }
