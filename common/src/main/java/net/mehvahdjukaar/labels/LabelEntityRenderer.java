@@ -87,7 +87,13 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
                     id,
                     item,
                     ClientConfigs.TEXTURE_SIZE.get(),
-                    i -> LabelEntityRenderer.postProcess(i, entity.getColor()));
+                    i -> {
+                        try {
+                            LabelEntityRenderer.postProcess(i, entity.getColor());
+                        }catch (Exception e){
+                            LabelsMod.LOGGER.warn("Failed to correctly create label image for {}:",i, e);
+                        }
+                    });
 
             if (tex.isInitialized()) {
 

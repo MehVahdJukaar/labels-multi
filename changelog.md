@@ -1,2 +1,1 @@
-- text color is not shaded!
-- fixed interacting with labels not triggering sculks
+fixed an edge case crash
