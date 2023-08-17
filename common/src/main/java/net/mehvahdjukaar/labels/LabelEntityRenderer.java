@@ -41,6 +41,7 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
@@ -70,7 +71,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
         poseStack.pushPose();
         //buffer = Minecraft.getInstance().renderBuffers().outlineBufferSource();
         poseStack.mulPose(Vector3f.YP.rotationDegrees(180 - entity.getYRot()));
-        poseStack.mulPose(Vector3f.XP.rotationDegrees(entity.getXRot()));
+        poseStack.mulPose(Vector3f.XP.rotationDegrees(-entity.getXRot()));
 
         poseStack.translate(0, -0, -0.5 + 1 / 32f);
         poseStack.translate(-0.5, -0.5, -0.5);
@@ -236,7 +237,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
             int s = old.size();
             Palette newPalette;
             if (s < 3) {
-                newPalette = Palette.ofColors(List.of(light, dark));
+                newPalette = Palette.ofColors((Collection) List.of(light, dark));
             } else {
                 newPalette = Palette.fromArc((BaseColor)light,(BaseColor) dark, s + (outline ? 2 : 0));
             }
@@ -245,7 +246,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
                 Palette newOutlinePalette;
                 if (newPalette.size() > 4) {
                     //split palette to use some colors for outline
-                    newOutlinePalette = Palette.ofColors(List.of());
+                    newOutlinePalette = Palette.ofColors((Collection) List.of());
                     newOutlinePalette.add(newPalette.remove(0));
                     var v = newPalette.remove(0);
                     newOutlinePalette.add(v);

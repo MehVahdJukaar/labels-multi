@@ -79,7 +79,7 @@ public class LabelEntity extends HangingEntity {
         this.attachFace = face;
         super.setDirection(horizontalOrientation);
         if(face != AttachFace.WALL) {
-            this.setXRot(90f * (face == AttachFace.FLOOR ? 1 : -1));
+            this.setXRot(90f * (face == AttachFace.FLOOR ? -1 : 1));
             this.setYRot((horizontalOrientation.get2DDataValue() * 90));
             this.xRotO = this.getXRot();
             this.yRotO = this.getYRot();
@@ -230,6 +230,12 @@ public class LabelEntity extends HangingEntity {
         return LabelsMod.LABEL_ITEM.get().getDefaultInstance();
     }
 
+    @Override
+    public void setPos(double x, double y, double z) {
+        this.setPosRaw(x,y,z);
+        super.setPos(x, y, z);
+    }
+
     //just updates bounding box based off current pos
     @Override
     protected void recalculateBoundingBox() {
@@ -237,8 +243,6 @@ public class LabelEntity extends HangingEntity {
 
             var shape = level.getBlockState(pos).getBlockSupportShape(level, pos);
             if (shape.isEmpty()) {
-                var vv = Vec3.atCenterOf(pos);
-                this.setPosRaw(vv.x, vv.y, vv.z);
                 return; //wait for survives to be called so this will be removed
             }
             double offset;
@@ -273,7 +277,6 @@ public class LabelEntity extends HangingEntity {
             height /= 32;
             zWidth /= 32;
             this.setBoundingBox(new AABB(x - width, y - height, z - zWidth, x + width, y + height, z + zWidth));
-            //this.pos = new BlockPos(this.getX(), this.getY(), this.getZ());
         }
     }
 
