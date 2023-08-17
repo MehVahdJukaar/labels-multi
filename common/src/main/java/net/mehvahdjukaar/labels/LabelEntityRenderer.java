@@ -41,6 +41,7 @@ import org.checkerframework.checker.units.qual.A;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,7 +71,8 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
     public void render(LabelEntity entity, float entityYaw, float partialTicks,
                        PoseStack poseStack, MultiBufferSource buffer, int light) {
         super.render(entity, entityYaw, partialTicks, poseStack, buffer, light);
-
+        if (entity.tickCount == 0 && !LabelsMod.OPTIFRICK_HACK) return;
+        /*
         if(this.entityRenderDispatcher.shouldRenderHitBoxes()){
             BlockPos behind = entity.getSupportingBlockPos();
             VertexConsumer lines = buffer.getBuffer(RenderType.lines());
@@ -80,15 +82,14 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
             AABB bb = new AABB(behind).inflate(0.01);
             LevelRenderer.renderLineBox(poseStack, lines, bb, 1.0F, 0, 0, 1.0F);
             poseStack.popPose();
-        }
-
-        //prevents incorrect rendering on first frame
-        if (entity.tickCount == 0 && !LabelsMod.OPTIFRICK_HACK) return;
+        }*/
 
         poseStack.pushPose();
-        //buffer = Minecraft.getInstance().renderBuffers().outlineBufferSource();
+
+        //prevents incorrect rendering on first frame
+
         poseStack.mulPose(Axis.YP.rotationDegrees(180 - entity.getYRot()));
-        poseStack.mulPose(Axis.XP.rotationDegrees(entity.getXRot()));
+        poseStack.mulPose(Axis.XP.rotationDegrees( - entity.getXRot()));
 
         poseStack.translate(0, -0, -0.5 + 1 / 32f);
         poseStack.translate(-0.5, -0.5, -0.5);

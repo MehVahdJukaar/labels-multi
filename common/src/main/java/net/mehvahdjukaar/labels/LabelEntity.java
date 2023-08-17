@@ -2,6 +2,7 @@ package net.mehvahdjukaar.labels;
 
 import com.google.common.base.Preconditions;
 import com.google.common.math.DoubleMath;
+import net.fabricmc.loader.impl.lib.sat4j.core.Vec;
 import net.mehvahdjukaar.moonlight.api.entity.IExtraClientSpawnData;
 import net.mehvahdjukaar.moonlight.api.platform.ForgeHelper;
 import net.mehvahdjukaar.moonlight.api.platform.PlatHelper;
@@ -85,7 +86,7 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
     public void setOrientation(Direction horizontalOrientation, AttachFace face) {
         this.attachFace = Preconditions.checkNotNull(face);
         if (face != AttachFace.WALL) {
-            this.setXRot(90f * (face == AttachFace.FLOOR ? 1 : -1));
+            this.setXRot(90f * (face == AttachFace.FLOOR ? -1 : 1));
             this.setYRot((horizontalOrientation.get2DDataValue() * 90));
             this.xRotO = this.getXRot();
             this.yRotO = this.getYRot();
@@ -109,14 +110,14 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
     @Override
     public void writeSpawnData(FriendlyByteBuf buf) {
         buf.writeBoolean(isInBlock);
-        buf.writeVarInt(direction.get3DDataValue());
+        buf.writeVarInt(direction.get2DDataValue());
         buf.writeVarInt(attachFace.ordinal());
     }
 
     @Override
     public void readSpawnData(FriendlyByteBuf buf) {
         this.isInBlock = buf.readBoolean();
-        this.setOrientation(Direction.from3DDataValue(buf.readVarInt()), AttachFace.values()[buf.readVarInt()]);
+        this.setOrientation(Direction.from2DDataValue(buf.readVarInt()), AttachFace.values()[buf.readVarInt()]);
     }
 
     @Override
@@ -195,6 +196,7 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
     @Override
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
+        tag.putBoolean("InBlock", this.isInBlock);
         if (!this.getItem().isEmpty()) {
             tag.put("Item", this.getItem().save(new CompoundTag()));
         }
@@ -211,6 +213,7 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
     @Override
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
+        this.isInBlock = tag.getBoolean("InBlock");
         CompoundTag compound = tag.getCompound("Item");
         if (!compound.isEmpty()) {
             ItemStack itemstack = ItemStack.of(compound);
@@ -241,6 +244,23 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
     }
 
 
+    @Override
+    public void absMoveTo(double x, double y, double z, float yRot, float xRot) {
+        super.absMoveTo(x, y, z, yRot, xRot);
+        int aa = 1;
+    }
+
+    @Override
+    public void absMoveTo(double x, double y, double z) {
+        super.absMoveTo(x, y, z);
+    }
+
+    @Override
+    public void setPos(double x, double y, double z) {
+        this.setPosRaw(x,y,z);
+        super.setPos(x, y, z);
+    }
+
     //just updates bounding box based off current pos
     //ths gets called as part of setPos and must call setPosRaw. Duty of this is not just hitbox but also figure out the position of the entity
     @Override
@@ -249,18 +269,13 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
             //first we set pos
             Level level = level();
 
-            var blockPosCenter = Vec3.atCenterOf(pos);
-
-            BlockPos oldPos = pos;
+            Vec3 blockPosCenter = Vec3.atCenterOf(pos);
 
             BlockPos supportPos = this.getSupportingBlockPos();
             BlockState state = level.getBlockState(supportPos);
             VoxelShape supportShape = state.getBlockSupportShape(level, supportPos);
             if (supportShape.isEmpty()) {
-                if (level.isClientSide) {
-                    int aa = 1;
-                }
-
+                //we always need to set pos
                 return; //wait for survives to be called so this will be removed
             }
             double offset;
@@ -381,11 +396,12 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
 
     @Override
     public boolean survives() {
-        //if (true) return true;
         Level level = this.level();
         //dont asky why this is here...
         this.pos = BlockPos.containing(this.position());
         if (!level.noCollision(this)) {
+            //we always need to set pos
+            this.setPosRaw(pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5);
             return false;
         }
         BlockPos supportPos = getSupportingBlockPos();
@@ -409,7 +425,7 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
 
     }
 
-    private Direction getBehindDirection() {
+    public Direction getBehindDirection() {
         return switch (attachFace) {
             case WALL -> direction.getOpposite();
             case FLOOR -> Direction.DOWN;
