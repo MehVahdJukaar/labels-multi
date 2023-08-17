@@ -24,8 +24,8 @@ public class LabelItem extends Item {
 
     @Override
     public InteractionResult useOn(UseOnContext pContext) {
-        BlockPos blockpos = pContext.getClickedPos();
         Direction direction = pContext.getClickedFace();
+        BlockPos blockpos = pContext.getClickedPos().relative(direction);
         Direction facing = pContext.getHorizontalDirection();
         Player player = pContext.getPlayer();
         ItemStack itemstack = pContext.getItemInHand();

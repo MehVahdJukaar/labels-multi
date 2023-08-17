@@ -1,15 +1,18 @@
 package net.mehvahdjukaar.labels;
 
+import com.google.common.base.Preconditions;
 import com.google.common.math.DoubleMath;
+import net.mehvahdjukaar.moonlight.api.entity.IExtraClientSpawnData;
 import net.mehvahdjukaar.moonlight.api.platform.ForgeHelper;
+import net.mehvahdjukaar.moonlight.api.platform.PlatHelper;
 import net.mehvahdjukaar.moonlight.api.util.Utils;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -26,10 +29,8 @@ import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.decoration.HangingEntity;
-import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
-import net.minecraft.world.item.ItemFrameItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameRules;
@@ -40,9 +41,10 @@ import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
-public class LabelEntity extends HangingEntity {
+public class LabelEntity extends HangingEntity implements IExtraClientSpawnData {
 
     private static final EntityDataAccessor<ItemStack> DATA_ITEM = SynchedEntityData.defineId(LabelEntity.class,
             EntityDataSerializers.ITEM_STACK);
@@ -54,6 +56,7 @@ public class LabelEntity extends HangingEntity {
             EntityDataSerializers.BOOLEAN);
 
     private AttachFace attachFace = AttachFace.WALL;
+    private boolean isInBlock = false;
 
     //client
     private boolean needsVisualRefresh = true;
@@ -65,12 +68,13 @@ public class LabelEntity extends HangingEntity {
 
     public LabelEntity(EntityType<? extends HangingEntity> entityType, Level world) {
         super(entityType, world);
+        this.direction = Direction.SOUTH;
     }
 
     public LabelEntity(Level level, BlockPos pos, Direction clickedFace, Direction horizontalFacing) {
         super(LabelsMod.LABEL.get(), level, pos);
         if (clickedFace.getAxis().isHorizontal()) {
-            this.setOrientation(clickedFace,AttachFace.WALL); //clickedFace is used for horizontal clickedFace
+            this.setOrientation(clickedFace, AttachFace.WALL); //clickedFace is used for horizontal clickedFace
         } else {
             this.setOrientation(horizontalFacing.getOpposite(), clickedFace == Direction.UP ? AttachFace.FLOOR : AttachFace.CEILING);
         }
@@ -79,14 +83,14 @@ public class LabelEntity extends HangingEntity {
 
 
     public void setOrientation(Direction horizontalOrientation, AttachFace face) {
-        this.attachFace = face;
-        super.setDirection(horizontalOrientation);
-        if(face != AttachFace.WALL) {
+        this.attachFace = Preconditions.checkNotNull(face);
+        if (face != AttachFace.WALL) {
             this.setXRot(90f * (face == AttachFace.FLOOR ? 1 : -1));
             this.setYRot((horizontalOrientation.get2DDataValue() * 90));
             this.xRotO = this.getXRot();
             this.yRotO = this.getYRot();
         }
+        super.setDirection(Preconditions.checkNotNull(horizontalOrientation));
     }
 
     //item frame code
@@ -99,17 +103,20 @@ public class LabelEntity extends HangingEntity {
     //might as well use this
     @Override
     public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return new ClientboundAddEntityPacket(this,
-                ((this.direction.get2DDataValue() & 0b1111) << 4) | (this.attachFace.ordinal() & 0b1111),
-                this.getPos());
+        return PlatHelper.getEntitySpawnPacket(this);
     }
 
     @Override
-    public void recreateFromPacket(ClientboundAddEntityPacket pPacket) {
-        super.recreateFromPacket(pPacket);
-        int data = pPacket.getData();
-        this.setOrientation(Direction.from2DDataValue((data >> 4) & 0b1111),
-                AttachFace.values()[data & 0b1111]);
+    public void writeSpawnData(FriendlyByteBuf buf) {
+        buf.writeBoolean(isInBlock);
+        buf.writeVarInt(direction.get3DDataValue());
+        buf.writeVarInt(attachFace.ordinal());
+    }
+
+    @Override
+    public void readSpawnData(FriendlyByteBuf buf) {
+        this.isInBlock = buf.readBoolean();
+        this.setOrientation(Direction.from3DDataValue(buf.readVarInt()), AttachFace.values()[buf.readVarInt()]);
     }
 
     @Override
@@ -233,36 +240,54 @@ public class LabelEntity extends HangingEntity {
         return LabelsMod.LABEL_ITEM.get().getDefaultInstance();
     }
 
+
     //just updates bounding box based off current pos
+    //ths gets called as part of setPos and must call setPosRaw. Duty of this is not just hitbox but also figure out the position of the entity
     @Override
     protected void recalculateBoundingBox() {
-        if (this.direction != null) {
-
+        if (this.attachFace != null) {
+            //first we set pos
             Level level = level();
-            var shape = level.getBlockState(pos).getBlockSupportShape(level, pos);
-            if (shape.isEmpty()) {
-                var vv = Vec3.atCenterOf(pos);
-                this.setPosRaw(vv.x, vv.y, vv.z);
+
+            var blockPosCenter = Vec3.atCenterOf(pos);
+
+            BlockPos oldPos = pos;
+
+            BlockPos supportPos = this.getSupportingBlockPos();
+            BlockState state = level.getBlockState(supportPos);
+            VoxelShape supportShape = state.getBlockSupportShape(level, supportPos);
+            if (supportShape.isEmpty()) {
+                if (level.isClientSide) {
+                    int aa = 1;
+                }
+
                 return; //wait for survives to be called so this will be removed
             }
             double offset;
             Direction dir = this.getBehindDirection();
 
+            VoxelShape shape = supportShape.move(supportPos.getX(), supportPos.getY(), supportPos.getZ());
+            float g = 1 / 32f;
+
             if (dir.getAxisDirection() != Direction.AxisDirection.POSITIVE) {
-                offset = 0.5 - shape.max(dir.getAxis());
+                offset = shape.max(dir.getAxis()) + g;
+                //if we are not on the edge then we
+                isInBlock = supportShape.max(dir.getAxis())!=1;
             } else {
-                offset = -0.5 + shape.min(dir.getAxis());
+                offset = shape.min(dir.getAxis()) - g;
+                isInBlock = supportShape.min(dir.getAxis())!=0;
             }
-            Vec3 v = Vec3.atCenterOf(pos);
-            offset -= 1 / 32f;
 
-            v = v.add(dir.getStepX() * offset, dir.getStepY() * offset, dir.getStepZ() * offset);
+            Vec3 mask = new Vec3(dir.step());
+            mask = mask.multiply(mask);
+            Vec3 newPos = mask.scale(offset).subtract(blockPosCenter).multiply(mask).add(blockPosCenter);
 
-            this.setPosRaw(v.x, v.y, v.z);
 
-            double x = this.getX();
-            double y = this.getY();
-            double z = this.getZ();
+            double x = newPos.x;
+            double y = newPos.y;
+            double z = newPos.z;
+
+            this.setPosRaw(x, y, z);
 
             double width = this.getWidth();
             double height = this.getHeight();
@@ -276,14 +301,15 @@ public class LabelEntity extends HangingEntity {
             width /= 32;
             height /= 32;
             zWidth /= 32;
-            this.setBoundingBox(new AABB(x - width, y - height, z - zWidth, x + width, y + height, z + zWidth));
-            //this.pos = new BlockPos(this.getX(), this.getY(), this.getZ());
+            AABB newBB = new AABB(x - width, y - height, z - zWidth, x + width, y + height, z + zWidth);
+            this.setBoundingBox(newBB);
+            this.pos = BlockPos.containing(newPos);
         }
     }
 
     public BlockPos getSupportingBlockPos() {
         Direction behind = this.getBehindDirection();
-        return BlockPos.containing(this.position().relative(behind, 0.05));
+        return isInBlock ? pos : pos.relative(behind);
     }
 
     @Override
@@ -320,7 +346,7 @@ public class LabelEntity extends HangingEntity {
             }
             if (!success) {
                 var color = ForgeHelper.getColor(itemstack);
-                if(color != null && color != this.getColor()) {
+                if (color != null && color != this.getColor()) {
                     level.playSound(null, pos, SoundEvents.DYE_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
                     this.getEntityData().set(DATA_DYE_COLOR, (byte) (color == null ? -1 : color.ordinal()));
                     this.recomputeTexture(this.getItem());
@@ -355,24 +381,27 @@ public class LabelEntity extends HangingEntity {
 
     @Override
     public boolean survives() {
+        //if (true) return true;
         Level level = this.level();
+        //dont asky why this is here...
+        this.pos = BlockPos.containing(this.position());
         if (!level.noCollision(this)) {
             return false;
         }
-        BlockPos pos = getSupportingBlockPos();
-        Direction behindDIr = this.getBehindDirection();
-        BlockState state = level.getBlockState(pos);
-        var blockShape = state.getBlockSupportShape(level, pos);
+        BlockPos supportPos = getSupportingBlockPos();
+        Direction behindDir = this.getBehindDirection();
+        BlockState state = level.getBlockState(supportPos);
+        var blockShape = state.getBlockSupportShape(level, supportPos);
         if (blockShape.isEmpty() || !state.isSolid()) {
             return false;
         }
         var bbShape = this.getBoundingBox().move(-Mth.floor(this.getX()), -Mth.floor(this.getY()), -Mth.floor(this.getZ()));
 
-        if (behindDIr.getAxisDirection() == Direction.AxisDirection.POSITIVE) {
-            if (!DoubleMath.fuzzyEquals(bbShape.max(behindDIr.getAxis()), bbShape.max(behindDIr.getAxis()), 1.0E-7))
+        if (behindDir.getAxisDirection() == Direction.AxisDirection.POSITIVE) {
+            if (!DoubleMath.fuzzyEquals(bbShape.max(behindDir.getAxis()), bbShape.max(behindDir.getAxis()), 1.0E-7))
                 return false;
         } else {
-            if (!DoubleMath.fuzzyEquals(bbShape.min(behindDIr.getAxis()), bbShape.min(behindDIr.getAxis()), 1.0E-7))
+            if (!DoubleMath.fuzzyEquals(bbShape.min(behindDir.getAxis()), bbShape.min(behindDir.getAxis()), 1.0E-7))
                 return false;
         }
 

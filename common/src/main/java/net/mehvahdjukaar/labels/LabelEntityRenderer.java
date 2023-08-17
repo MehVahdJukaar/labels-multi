@@ -18,16 +18,16 @@ import net.mehvahdjukaar.moonlight.api.util.math.colors.RGBColor;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.Sheets;
+import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
+import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.ModelManager;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
@@ -35,7 +35,9 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import org.checkerframework.checker.units.qual.A;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
@@ -60,9 +62,25 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
     }
 
     @Override
+    public boolean shouldRender(LabelEntity livingEntity, Frustum camera, double camX, double camY, double camZ) {
+        return true;// super.shouldRender(livingEntity, camera, camX, camY, camZ);
+    }
+
+    @Override
     public void render(LabelEntity entity, float entityYaw, float partialTicks,
                        PoseStack poseStack, MultiBufferSource buffer, int light) {
         super.render(entity, entityYaw, partialTicks, poseStack, buffer, light);
+
+        if(this.entityRenderDispatcher.shouldRenderHitBoxes()){
+            BlockPos behind = entity.getSupportingBlockPos();
+            VertexConsumer lines = buffer.getBuffer(RenderType.lines());
+            poseStack.pushPose();
+            var ep = entity.position();
+            poseStack.translate(-ep.x, -ep.y, -ep.z);
+            AABB bb = new AABB(behind).inflate(0.01);
+            LevelRenderer.renderLineBox(poseStack, lines, bb, 1.0F, 0, 0, 1.0F);
+            poseStack.popPose();
+        }
 
         //prevents incorrect rendering on first frame
         if (entity.tickCount == 0 && !LabelsMod.OPTIFRICK_HACK) return;
@@ -90,8 +108,8 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
                     i -> {
                         try {
                             LabelEntityRenderer.postProcess(i, entity.getColor());
-                        }catch (Exception e){
-                            LabelsMod.LOGGER.warn("Failed to correctly create label image for {}:",i, e);
+                        } catch (Exception e) {
+                            LabelsMod.LOGGER.warn("Failed to correctly create label image for {}:", i, e);
                         }
                     });
 
@@ -197,7 +215,10 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
             //reduce outline colors
             if (outlineTexture != null) {
                 int maxOutlineColors = 3;
-                SpriteUtils.reduceColors(outlineTexture.getImage(), (IntUnaryOperator) j -> Math.min(j, maxOutlineColors));
+                try {
+                    SpriteUtils.reduceColors(outlineTexture.getImage(), (IntUnaryOperator) j -> Math.min(j, maxOutlineColors));
+                } catch (Exception ignored) {
+                }
             }
         }
 
@@ -296,7 +317,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
         }
 
         TextUtil.renderAllLines(tempPageLines, 10, font, matrixStack, buffer,
-                TextUtil.renderProperties(c, glow,1.5f,  light, Style.EMPTY,
+                TextUtil.renderProperties(c, glow, 1.5f, light, Style.EMPTY,
                         entity.getDirection().step(),
                         () -> new LOD(camera, entity.getPos()).isVeryNear()));
 
