@@ -2,7 +2,6 @@ package net.mehvahdjukaar.labels;
 
 import com.google.common.base.Preconditions;
 import com.google.common.math.DoubleMath;
-import net.fabricmc.loader.impl.lib.sat4j.core.Vec;
 import net.mehvahdjukaar.moonlight.api.entity.IExtraClientSpawnData;
 import net.mehvahdjukaar.moonlight.api.platform.ForgeHelper;
 import net.mehvahdjukaar.moonlight.api.platform.PlatHelper;
@@ -243,22 +242,10 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
         return LabelsMod.LABEL_ITEM.get().getDefaultInstance();
     }
 
-
-    @Override
-    public void absMoveTo(double x, double y, double z, float yRot, float xRot) {
-        super.absMoveTo(x, y, z, yRot, xRot);
-        int aa = 1;
-    }
-
-    @Override
-    public void absMoveTo(double x, double y, double z) {
-        super.absMoveTo(x, y, z);
-    }
-
     @Override
     public void setPos(double x, double y, double z) {
-        this.setPosRaw(x,y,z);
-        super.setPos(x, y, z);
+        this.setPosRaw(x, y, z); //we must set pos
+        super.setPos(x, y, z); //this will call recalculateBB which will also adjust pos if needed
     }
 
     //just updates bounding box based off current pos
@@ -275,7 +262,6 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
             BlockState state = level.getBlockState(supportPos);
             VoxelShape supportShape = state.getBlockSupportShape(level, supportPos);
             if (supportShape.isEmpty()) {
-                //we always need to set pos
                 return; //wait for survives to be called so this will be removed
             }
             double offset;
@@ -287,10 +273,10 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
             if (dir.getAxisDirection() != Direction.AxisDirection.POSITIVE) {
                 offset = shape.max(dir.getAxis()) + g;
                 //if we are not on the edge then we
-                isInBlock = supportShape.max(dir.getAxis())!=1;
+                isInBlock = supportShape.max(dir.getAxis()) != 1;
             } else {
                 offset = shape.min(dir.getAxis()) - g;
-                isInBlock = supportShape.min(dir.getAxis())!=0;
+                isInBlock = supportShape.min(dir.getAxis()) != 0;
             }
 
             Vec3 mask = new Vec3(dir.step());
@@ -397,11 +383,11 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
     @Override
     public boolean survives() {
         Level level = this.level();
-        //dont asky why this is here...
+        //dont ask why this is here...
         this.pos = BlockPos.containing(this.position());
         if (!level.noCollision(this)) {
             //we always need to set pos
-            this.setPosRaw(pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5);
+            this.setPosRaw(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
             return false;
         }
         BlockPos supportPos = getSupportingBlockPos();
