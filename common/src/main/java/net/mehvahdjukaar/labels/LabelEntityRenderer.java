@@ -63,16 +63,10 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
     }
 
     @Override
-    public boolean shouldRender(LabelEntity livingEntity, Frustum camera, double camX, double camY, double camZ) {
-        return true;// super.shouldRender(livingEntity, camera, camX, camY, camZ);
-    }
-
-    @Override
     public void render(LabelEntity entity, float entityYaw, float partialTicks,
                        PoseStack poseStack, MultiBufferSource buffer, int light) {
         super.render(entity, entityYaw, partialTicks, poseStack, buffer, light);
         if (entity.tickCount == 0 && !LabelsMod.OPTIFRICK_HACK) return;
-        /*
         if(this.entityRenderDispatcher.shouldRenderHitBoxes()){
             BlockPos behind = entity.getSupportingBlockPos();
             VertexConsumer lines = buffer.getBuffer(RenderType.lines());
@@ -82,7 +76,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
             AABB bb = new AABB(behind).inflate(0.01);
             LevelRenderer.renderLineBox(poseStack, lines, bb, 1.0F, 0, 0, 1.0F);
             poseStack.popPose();
-        }*/
+        }
 
         poseStack.pushPose();
 

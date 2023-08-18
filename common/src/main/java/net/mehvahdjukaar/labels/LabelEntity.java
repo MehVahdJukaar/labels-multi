@@ -35,6 +35,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.level.gameevent.GameEvent;
@@ -55,7 +56,7 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
     private static final EntityDataAccessor<Boolean> DATA_TEXT = SynchedEntityData.defineId(LabelEntity.class,
             EntityDataSerializers.BOOLEAN);
 
-    private AttachFace attachFace = AttachFace.WALL;
+    private AttachFace attachFace = null;
     private boolean isInBlock = false;
 
     //client
@@ -65,6 +66,8 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
     private float scale;
     private FormattedCharSequence[] labelText;
 
+    //lets talk about this. When label spawns its given a fake level that doesnt contains all the blocks so we cant see whats behind it...
+    private BlockState clientSupportHack = null;
 
     public LabelEntity(EntityType<? extends HangingEntity> entityType, Level world) {
         super(entityType, world);
@@ -109,6 +112,7 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
     @Override
     public void writeSpawnData(FriendlyByteBuf buf) {
         buf.writeBoolean(isInBlock);
+        buf.writeVarInt(Block.BLOCK_STATE_REGISTRY.getId(level().getBlockState(this.getSupportingBlockPos())));
         buf.writeVarInt(direction.get2DDataValue());
         buf.writeVarInt(attachFace.ordinal());
     }
@@ -116,6 +120,7 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
     @Override
     public void readSpawnData(FriendlyByteBuf buf) {
         this.isInBlock = buf.readBoolean();
+        this.clientSupportHack = Block.BLOCK_STATE_REGISTRY.byId(buf.readVarInt());
         this.setOrientation(Direction.from2DDataValue(buf.readVarInt()), AttachFace.values()[buf.readVarInt()]);
     }
 
@@ -255,11 +260,15 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
         if (this.attachFace != null) {
             //first we set pos
             Level level = level();
-
             Vec3 blockPosCenter = Vec3.atCenterOf(pos);
 
             BlockPos supportPos = this.getSupportingBlockPos();
-            BlockState state = level.getBlockState(supportPos);
+            BlockState state;
+            if (clientSupportHack != null) {
+                state = clientSupportHack;
+                clientSupportHack = null;
+            } else state = level.getBlockState(supportPos);
+
             VoxelShape supportShape = state.getBlockSupportShape(level, supportPos);
             if (supportShape.isEmpty()) {
                 return; //wait for survives to be called so this will be removed
