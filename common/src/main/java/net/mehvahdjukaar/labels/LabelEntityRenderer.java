@@ -66,14 +66,14 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
     public void render(LabelEntity entity, float entityYaw, float partialTicks,
                        PoseStack poseStack, MultiBufferSource buffer, int light) {
         super.render(entity, entityYaw, partialTicks, poseStack, buffer, light);
-        if (entity.tickCount == 0 && !LabelsMod.OPTIFRICK_HACK) return;
+
         if(this.entityRenderDispatcher.shouldRenderHitBoxes()){
-            BlockPos behind = entity.getSupportingBlockPos();
+            BlockPos behind = entity.getPos();
             VertexConsumer lines = buffer.getBuffer(RenderType.lines());
             poseStack.pushPose();
             var ep = entity.position();
-            poseStack.translate(-ep.x, -ep.y, -ep.z);
-            AABB bb = new AABB(behind).inflate(0.01);
+            Vec3 vec3 = new Vec3(behind.getX() - ep.x, behind.getY() - ep.y, behind.getZ() - ep.z);
+            AABB bb = new AABB(vec3, vec3.add(1,1,1)).inflate(0.01);
             LevelRenderer.renderLineBox(poseStack, lines, bb, 1.0F, 0, 0, 1.0F);
             poseStack.popPose();
         }

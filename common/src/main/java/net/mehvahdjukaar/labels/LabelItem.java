@@ -25,7 +25,7 @@ public class LabelItem extends Item {
     @Override
     public InteractionResult useOn(UseOnContext pContext) {
         Direction direction = pContext.getClickedFace();
-        BlockPos blockpos = pContext.getClickedPos().relative(direction);
+        BlockPos blockpos = pContext.getClickedPos();
         Direction facing = pContext.getHorizontalDirection();
         Player player = pContext.getPlayer();
         ItemStack itemstack = pContext.getItemInHand();
@@ -33,7 +33,7 @@ public class LabelItem extends Item {
             return InteractionResult.FAIL;
         } else {
             Level level = pContext.getLevel();
-
+if(level.isClientSide)return InteractionResult.SUCCESS;
             LabelEntity label = new LabelEntity(level, blockpos, direction,facing);
 
             CompoundTag compoundtag = itemstack.getTag();
