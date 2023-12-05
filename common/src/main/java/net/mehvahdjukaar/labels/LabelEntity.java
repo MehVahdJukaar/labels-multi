@@ -106,6 +106,23 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
         buf.writeVarInt(Block.BLOCK_STATE_REGISTRY.getId(level().getBlockState(this.getPos())));
         buf.writeVarInt(direction.get2DDataValue());
         buf.writeVarInt(attachFace.ordinal());
+        // Sets all data dirty.
+        // Fabric weirdness IDK why.
+        // If not, then sometimes the data sync packet will find a null entity with the given id
+        if (PlatHelper.getPlatform().isFabric()) {
+            var col = getColor();
+            var text = hasText();
+            var glow = hasGlowInk();
+            var item = getItem();
+            this.getEntityData().set(DATA_DYE_COLOR, (byte) -1);
+            this.getEntityData().set(DATA_GLOWING, false);
+            this.getEntityData().set(DATA_TEXT, false);
+            this.getEntityData().set(DATA_ITEM, ItemStack.EMPTY);
+            this.setColor(col);
+            this.setGlowInk(glow);
+            this.getEntityData().set(DATA_TEXT, text);
+            this.getEntityData().set(DATA_ITEM, item);
+        }
     }
 
     @Override
@@ -174,15 +191,17 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
     @Override
     public void onSyncedDataUpdated(EntityDataAccessor<?> pKey) {
         super.onSyncedDataUpdated(pKey);
-        if (pKey.equals(DATA_ITEM)) {
-            ItemStack itemstack = this.getItem();
-            if (!itemstack.isEmpty() && itemstack.getEntityRepresentation() != this) {
-                itemstack.setEntityRepresentation(this);
+        if (level().isClientSide) {
+            if (pKey.equals(DATA_ITEM)) {
+                ItemStack itemstack = this.getItem();
+                if (!itemstack.isEmpty() && itemstack.getEntityRepresentation() != this) {
+                    itemstack.setEntityRepresentation(this);
+                }
+                recomputeTexture(itemstack);
+                this.needsVisualRefresh = true;
+            } else if (pKey.equals(DATA_DYE_COLOR)) {
+                recomputeTexture(this.getItem());
             }
-            recomputeTexture(itemstack);
-            this.needsVisualRefresh = true;
-        } else if (pKey.equals(DATA_DYE_COLOR)) {
-            recomputeTexture(this.getItem());
         }
     }
 
@@ -196,8 +215,9 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
     @Override
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
-        if (!this.getItem().isEmpty()) {
-            tag.put("Item", this.getItem().save(new CompoundTag()));
+        ItemStack item = this.getItem();
+        if (!item.isEmpty()) {
+            tag.put("Item", item.save(new CompoundTag()));
         }
         tag.putByte("Facing", (byte) this.direction.get2DDataValue());
         tag.putByte("AttachFace", (byte) this.attachFace.ordinal());
@@ -321,16 +341,16 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
                 success = true;
             } else if (itemstack.getItem() == Items.GLOW_INK_SAC && !glowInk) {
                 level.playSound(null, pos, SoundEvents.GLOW_INK_SAC_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
-                this.getEntityData().set(DATA_GLOWING, true);
+                setGlowInk(true);
                 success = true;
             } else if (itemstack.getItem() == Items.INK_SAC && glowInk) {
                 level.playSound(null, pos, SoundEvents.INK_SAC_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
-                this.getEntityData().set(DATA_GLOWING, false);
+                setGlowInk(false);
                 success = true;
             } else if (ForgeHelper.getColor(itemstack) != null) {
                 level.playSound(null, pos, SoundEvents.DYE_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
                 var color = ForgeHelper.getColor(itemstack);
-                this.getEntityData().set(DATA_DYE_COLOR, (byte) (color == null ? -1 : color.ordinal()));
+                setColor(color);
                 this.recomputeTexture(this.getItem());
                 success = true;
             }
@@ -354,10 +374,6 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
                 return InteractionResult.SUCCESS;
             }
         }
-    }
-
-    private void cycleText() {
-        this.getEntityData().set(DATA_TEXT, !this.getEntityData().get(DATA_TEXT));
     }
 
     @Override
@@ -432,9 +448,22 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
         return this.getEntityData().get(DATA_TEXT);
     }
 
+    private void setGlowInk(boolean glowing) {
+        this.getEntityData().set(DATA_GLOWING, glowing);
+    }
+
+    private void cycleText() {
+        this.getEntityData().set(DATA_TEXT, !this.getEntityData().get(DATA_TEXT));
+    }
+
+
     @Nullable
     public DyeColor getColor() {
         byte i = this.getEntityData().get(DATA_DYE_COLOR);
         return i == -1 ? null : DyeColor.byId(i);
+    }
+
+    private void setColor(@Nullable DyeColor color) {
+        this.getEntityData().set(DATA_DYE_COLOR, (byte) (color == null ? -1 : color.ordinal()));
     }
 }

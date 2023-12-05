@@ -13,10 +13,6 @@ public class LabelsModForge {
 
     public LabelsModForge() {
         LabelsMod.commonInit();
-
-        if (PlatHelper.getPhysicalSide().isClient()) {
-            LabelsModClient.init();
-        }
     }
 }
 

@@ -1,5 +1,6 @@
 package net.mehvahdjukaar.labels;
 
+import net.mehvahdjukaar.moonlight.api.platform.PlatHelper;
 import net.mehvahdjukaar.moonlight.api.platform.RegHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
@@ -30,6 +31,10 @@ public class LabelsMod {
     }
 
     public static void commonInit() {
+        if (PlatHelper.getPhysicalSide().isClient()) {
+            LabelsModClient.init();
+        }
+
         RegHelper.addItemsToTabsRegistration(e -> {
             e.addBefore(CreativeModeTabs.FUNCTIONAL_BLOCKS, i -> i.is(Items.ITEM_FRAME), LABEL_ITEM.get());
         });
