@@ -106,6 +106,9 @@ dependencies {
     implementation 'org.jetbrains:annotations:22.0.0'
 
     modImplementation("net.mehvahdjukaar:moonlight-forge:${project.moonlight_version}")
+
+    modImplementation ("curse.maven:supplementaries-412082:5068158")
+
     //modImplementation ("curse.maven:jei-238222:3884337")
     //modImplementation("com.itayfeder.tinted:tinted-1.19.2-1.2.0")
     //modImplementation ("curse.maven:tinted-699549:4091058")

@@ -1,6 +1,7 @@
 package net.mehvahdjukaar.labels;
 
 import com.google.common.math.DoubleMath;
+import net.mehvahdjukaar.labels.integration.SuppCompat;
 import net.mehvahdjukaar.moonlight.api.entity.IExtraClientSpawnData;
 import net.mehvahdjukaar.moonlight.api.platform.ForgeHelper;
 import net.mehvahdjukaar.moonlight.api.platform.PlatHelper;
@@ -119,8 +120,8 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
             this.getEntityData().set(DATA_TEXT, false);
             this.getEntityData().set(DATA_ITEM, ItemStack.EMPTY);
             this.setColor(col);
-            this.setGlowInk(glow);
-            this.getEntityData().set(DATA_TEXT, text);
+            this.setHasGlowInk(glow);
+            this.setHasText(text);
             this.getEntityData().set(DATA_ITEM, item);
         }
     }
@@ -223,7 +224,7 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
         tag.putByte("AttachFace", (byte) this.attachFace.ordinal());
         tag.putBoolean("Glowing", this.hasGlowInk());
         tag.putBoolean("Text", this.hasText());
-        var c = this.getColor();
+        DyeColor c = this.getColor();
         if (c != null) {
             tag.putByte("DyeColor", (byte) c.ordinal());
         }
@@ -242,8 +243,8 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
         }
         this.setOrientation(Direction.from2DDataValue(tag.getByte("Facing")),
                 AttachFace.values()[tag.getByte("AttachFace")]);
-        this.getEntityData().set(DATA_GLOWING, tag.getBoolean("Glowing"));
-        this.getEntityData().set(DATA_TEXT, tag.getBoolean("Text"));
+        this.setHasGlowInk(tag.getBoolean("Glowing"));
+        this.setHasText(tag.getBoolean("Text"));
         if (tag.contains("DyeColor")) {
             this.getEntityData().set(DATA_DYE_COLOR, tag.getByte("DyeColor"));
         }
@@ -294,6 +295,10 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
             Vec3 v = Vec3.atCenterOf(pos);
             offset -= 1 / 32f;
 
+            if(LabelsMod.SUPP && dir.getAxis() != Direction.Axis.Y){
+                if(SuppCompat.isSack(support)) v = v.add(0,-0.125, 0);
+            }
+
             v = v.add(dir.getStepX() * offset, dir.getStepY() * offset, dir.getStepZ() * offset);
 
             this.setPosRaw(v.x, v.y, v.z);
@@ -341,11 +346,11 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
                 success = true;
             } else if (itemstack.getItem() == Items.GLOW_INK_SAC && !glowInk) {
                 level.playSound(null, pos, SoundEvents.GLOW_INK_SAC_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
-                setGlowInk(true);
+                setHasGlowInk(true);
                 success = true;
             } else if (itemstack.getItem() == Items.INK_SAC && glowInk) {
                 level.playSound(null, pos, SoundEvents.INK_SAC_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
-                setGlowInk(false);
+                setHasGlowInk(false);
                 success = true;
             } else if (ForgeHelper.getColor(itemstack) != null) {
                 level.playSound(null, pos, SoundEvents.DYE_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
@@ -448,8 +453,12 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
         return this.getEntityData().get(DATA_TEXT);
     }
 
-    private void setGlowInk(boolean glowing) {
+    private void setHasGlowInk(boolean glowing) {
         this.getEntityData().set(DATA_GLOWING, glowing);
+    }
+
+    private void setHasText(boolean text) {
+        this.getEntityData().set(DATA_TEXT, text);
     }
 
     private void cycleText() {

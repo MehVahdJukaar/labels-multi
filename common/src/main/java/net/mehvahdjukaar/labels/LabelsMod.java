@@ -23,6 +23,7 @@ public class LabelsMod {
     public static final Logger LOGGER = LogManager.getLogger("Labels");
 
     public static final boolean OPTIFRICK_HACK = Package.getPackage("net.optifine") != null;
+    public static final boolean SUPP = PlatHelper.isModLoaded("supplementaries");
 
     private static final String NAME = "label";
 
