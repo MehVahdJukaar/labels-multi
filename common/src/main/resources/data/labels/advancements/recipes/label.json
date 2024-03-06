@@ -1,7 +1,7 @@
 {
     "parent": "minecraft:recipes/root",
     "criteria": {
-        "has_book": {
+        "has_paper": {
             "trigger": "minecraft:inventory_changed",
             "conditions": {
                 "items": [
@@ -34,7 +34,7 @@
     },
     "requirements": [
         [
-            "has_book",
+            "has_paper",
             "has_the_recipe"
         ]
     ],
