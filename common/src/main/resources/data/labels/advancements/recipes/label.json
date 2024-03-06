@@ -1,0 +1,49 @@
+{
+    "parent": "minecraft:recipes/root",
+    "criteria": {
+        "has_book": {
+            "trigger": "minecraft:inventory_changed",
+            "conditions": {
+                "items": [
+                    {
+                        "items": [
+                            "minecraft:paper"
+                        ]
+                    }
+                ]
+            }
+        },
+        "has_the_recipe": {
+            "trigger": "minecraft:recipe_unlocked",
+            "conditions": {
+                "recipe": "labels:label"
+            }
+        },
+        "has_the_recipe2": {
+            "trigger": "minecraft:recipe_unlocked",
+            "conditions": {
+                "recipe": "labels:label_supplementaries"
+            }
+        },
+        "has_the_recipe3": {
+            "trigger": "minecraft:recipe_unlocked",
+            "conditions": {
+                "recipe": "minecraft:label_supplementaries_off"
+            }
+        }
+    },
+    "requirements": [
+        [
+            "has_book",
+            "has_the_recipe"
+        ]
+    ],
+    "rewards": {
+        "recipes": [
+            "labels:label",
+            "labels:label_supplementaries",
+            "labels:label_supplementaries_off"
+        ]
+    },
+    "sends_telemetry_event": false
+}
