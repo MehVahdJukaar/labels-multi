@@ -1,1 +1,1 @@
-more fabric fixes
+some more hacks on fabric to prevent random unidentified visual glitches

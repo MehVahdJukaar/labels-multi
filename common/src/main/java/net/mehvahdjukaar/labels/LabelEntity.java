@@ -21,7 +21,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -64,6 +63,9 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
     private FormattedCharSequence[] labelText;
 
     private BlockState clientSupportStateHack = null;
+    //TODO: replace this with just the shape offset from center
+
+    private int fabricHack = 0;
 
     public LabelEntity(EntityType<? extends HangingEntity> entityType, Level level) {
         super(entityType, level);
@@ -107,6 +109,11 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
         buf.writeVarInt(Block.BLOCK_STATE_REGISTRY.getId(level().getBlockState(this.getPos())));
         buf.writeVarInt(direction.get2DDataValue());
         buf.writeVarInt(attachFace.ordinal());
+
+        fabricForceSetAllDataDirty();
+    }
+
+    private void fabricForceSetAllDataDirty() {
         // Sets all data dirty.
         // Fabric weirdness IDK why.
         // If not, then sometimes the data sync packet will find a null entity with the given id
@@ -168,6 +175,17 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
             if (!(entity instanceof Player player) || !player.getAbilities().instabuild) {
                 this.spawnAtLocation(LabelsMod.LABEL_ITEM.get());
             }
+        }
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (!level().isClientSide && this.fabricHack < 4) {
+            this.fabricHack++;
+            //some people report randomly labels loosing their patterns when going in the nether.... for some reason....
+            // Only happens on fabric of course
+            fabricForceSetAllDataDirty();
         }
     }
 
@@ -295,8 +313,8 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
             Vec3 v = Vec3.atCenterOf(pos);
             offset -= 1 / 32f;
 
-            if(LabelsMod.SUPP && dir.getAxis() != Direction.Axis.Y){
-                if(SuppCompat.isSack(support)) v = v.add(0,-0.125, 0);
+            if (LabelsMod.SUPP && dir.getAxis() != Direction.Axis.Y) {
+                if (SuppCompat.isSack(support)) v = v.add(0, -0.125, 0);
             }
 
             v = v.add(dir.getStepX() * offset, dir.getStepY() * offset, dir.getStepZ() * offset);
@@ -394,13 +412,15 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
         if (blockShape.isEmpty() || !state.isSolid()) {
             return false;
         }
-        var bbShape = this.getBoundingBox().move(-Mth.floor(this.getX()), -Mth.floor(this.getY()), -Mth.floor(this.getZ()));
+        var bbShape = this.getBoundingBox();
+        blockShape = blockShape.move(supportingPos.getX(), supportingPos.getY(), supportingPos.getZ());
 
+        //check if shapes are touching
         if (behindDIr.getAxisDirection() == Direction.AxisDirection.POSITIVE) {
-            if (!DoubleMath.fuzzyEquals(bbShape.max(behindDIr.getAxis()), bbShape.max(behindDIr.getAxis()), 1.0E-7))
+            if (!DoubleMath.fuzzyEquals(bbShape.max(behindDIr.getAxis()), blockShape.min(behindDIr.getAxis()), 1.0E-7))
                 return false;
         } else {
-            if (!DoubleMath.fuzzyEquals(bbShape.min(behindDIr.getAxis()), bbShape.min(behindDIr.getAxis()), 1.0E-7))
+            if (!DoubleMath.fuzzyEquals(bbShape.min(behindDIr.getAxis()), blockShape.max(behindDIr.getAxis()), 1.0E-7))
                 return false;
         }
 
