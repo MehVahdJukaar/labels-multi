@@ -40,7 +40,7 @@ dependencies {
     //modImplementation(fileTree(dir: 'mods_fabric', include: '*.jar'))
     //modImplementation("curse.maven:selene-499980:3859239")
 
-    modImplementation ("net.mehvahdjukaar:moonlight-fabric:${project.moonlight_version}")
+    modImplementation ("maven.modrinth:moonlight:fabric_${project.moonlight_version}")
 }
 
 
