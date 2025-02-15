@@ -24,10 +24,10 @@ subprojects {
         minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
         // The following line declares the mojmap mappings, you may use other mappings as well
         mappings loom.layered() {
-            it.parchment("org.parchmentmc.data:parchment-${rootProject.parchment_version}")
             it.officialMojangMappings {
                 setNameSyntheticMembers(false)
             }
+            it.parchment("org.parchmentmc.data:parchment-${rootProject.parchment_version}")
         }
     }
     var env = System.getenv()
@@ -121,7 +121,7 @@ allprojects {
             url "https://maven.firstdarkdev.xyz/snapshots"
         }
         maven { url 'https://jitpack.io' }
-
+        maven { url "https://maven.parchmentmc.org" }
         maven {
             name = "TerraformersMC"
             url = "https://maven.terraformersmc.com/"
