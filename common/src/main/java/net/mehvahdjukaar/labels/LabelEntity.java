@@ -1,7 +1,6 @@
 package net.mehvahdjukaar.labels;
 
 import com.google.common.math.DoubleMath;
-import net.mehvahdjukaar.labels.integration.SuppCompat;
 import net.mehvahdjukaar.moonlight.api.entity.IExtraClientSpawnData;
 import net.mehvahdjukaar.moonlight.api.platform.ForgeHelper;
 import net.mehvahdjukaar.moonlight.api.platform.PlatHelper;
@@ -28,6 +27,7 @@ import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.decoration.HangingEntity;
+import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
@@ -35,6 +35,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.StructureBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.phys.AABB;
@@ -66,6 +67,9 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
     //TODO: replace this with just the shape offset from center
 
     private int fabricHack = 0;
+
+
+    private boolean attachedOnBlockBehind = true;
 
     public LabelEntity(EntityType<? extends HangingEntity> entityType, Level level) {
         super(entityType, level);
@@ -109,7 +113,6 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
         buf.writeVarInt(Block.BLOCK_STATE_REGISTRY.getId(level().getBlockState(this.getPos())));
         buf.writeVarInt(direction.get2DDataValue());
         buf.writeVarInt(attachFace.ordinal());
-
         fabricForceSetAllDataDirty();
     }
 
@@ -283,6 +286,7 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
     @Override
     public void setPos(double x, double y, double z) {
         this.setPosRaw(x, y, z);
+        this.pos = BlockPos.containing(x, y, z);
         this.recalculateBoundingBox();
         this.hasImpulse = true;
     }
@@ -313,8 +317,8 @@ public class LabelEntity extends HangingEntity implements IExtraClientSpawnData 
             Vec3 v = Vec3.atCenterOf(pos);
             offset -= 1 / 32f;
 
-            if (LabelsMod.SUPP && dir.getAxis() != Direction.Axis.Y) {
-                if (SuppCompat.isSack(support)) v = v.add(0, -0.125, 0);
+            if (dir.getAxis() != Direction.Axis.Y && support.is(LabelsMod.LOWERS_LABELS)) {
+                v = v.add(0, -0.125, 0);
             }
 
             v = v.add(dir.getStepX() * offset, dir.getStepY() * offset, dir.getStepZ() * offset);
