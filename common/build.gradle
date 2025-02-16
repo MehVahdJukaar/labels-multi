@@ -9,6 +9,7 @@ loom {
 dependencies {
     modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
 
+    implementation(annotationProcessor("io.github.llamalad7:mixinextras-fabric:0.3.6"))
    // modImplementation("net.mehvahdjukaar:moonlight:${project.moonlight_version}")
     modImplementation("curse.maven:selene-499980:6194749")
     modImplementation ("curse.maven:supplementaries-412082:4707417")

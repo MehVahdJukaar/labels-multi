@@ -102,13 +102,15 @@ dependencies {
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionForge")) { transitive = false }
 
+    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.3.6"))
+    implementation(include("io.github.llamalad7:mixinextras-forge:0.3.6"))
 
     implementation 'org.jetbrains:annotations:22.0.0'
 
-    //modImplementation("net.mehvahdjukaar:moonlight-forge:${project.moonlight_version}")
+    modImplementation("net.mehvahdjukaar:moonlight-forge:${project.moonlight_version}")
 
-    modImplementation ("curse.maven:supplementaries-412082:5068158")
-    modImplementation("curse.maven:selene-499980:6194746")
+    modCompileOnly ("curse.maven:supplementaries-412082:5068158")
+   // modImplementation("curse.maven:selene-499980:6194746")
 
     //modImplementation ("curse.maven:jei-238222:3884337")
     //modImplementation("com.itayfeder.tinted:tinted-1.19.2-1.2.0")

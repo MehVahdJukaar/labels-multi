@@ -34,7 +34,7 @@ public class LabelItem extends Item {
         } else {
             Level level = pContext.getLevel();
 if(level.isClientSide)return InteractionResult.SUCCESS;
-            LabelEntity label = new LabelEntity(level, blockpos, direction,facing);
+            LabelEntity label = LabelEntity.placeOnFace(level, pContext.getClickLocation(), direction,facing);
 
             CompoundTag compoundtag = itemstack.getTag();
             if (compoundtag != null) {

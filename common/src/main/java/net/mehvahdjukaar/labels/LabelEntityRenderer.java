@@ -21,8 +21,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
-import net.minecraft.client.renderer.culling.Frustum;
-import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -66,15 +64,16 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
                        PoseStack poseStack, MultiBufferSource buffer, int light) {
         super.render(entity, entityYaw, partialTicks, poseStack, buffer, light);
 
-        if(this.entityRenderDispatcher.shouldRenderHitBoxes()){
-            BlockPos behind = entity.getPos();
+        if (this.entityRenderDispatcher.shouldRenderHitBoxes()) {
+            BlockPos behind = entity.calculateBehindPos();
             VertexConsumer lines = buffer.getBuffer(RenderType.lines());
             poseStack.pushPose();
             var ep = entity.position();
             Vec3 vec3 = new Vec3(behind.getX() - ep.x, behind.getY() - ep.y, behind.getZ() - ep.z);
-            AABB bb = new AABB(vec3, vec3.add(1,1,1)).inflate(0.01);
+            AABB bb = new AABB(vec3, vec3.add(1, 1, 1)).inflate(0.01);
             LevelRenderer.renderLineBox(poseStack, lines, bb, 1.0F, 0, 0, 1.0F);
             poseStack.popPose();
+            this.renderNameTag(entity, Component.literal(entity.getDirection().toString()), poseStack, buffer, LightTexture.FULL_BRIGHT);
         }
 
         poseStack.pushPose();
@@ -82,7 +81,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
         //prevents incorrect rendering on first frame
 
         poseStack.mulPose(Axis.YP.rotationDegrees(180 - entity.getYRot()));
-        poseStack.mulPose(Axis.XP.rotationDegrees( - entity.getXRot()));
+        poseStack.mulPose(Axis.XP.rotationDegrees(-entity.getXRot()));
 
         poseStack.translate(0, -0, -0.5 + 1 / 32f);
         poseStack.translate(-0.5, -0.5, -0.5);
@@ -313,7 +312,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
         TextUtil.renderAllLines(tempPageLines, 10, font, matrixStack, buffer,
                 TextUtil.renderProperties(c, glow, 1.5f, light, Style.EMPTY,
                         entity.getDirection().step(),
-                        () -> new LOD(camera, entity.getPos()).isVeryNear()));
+                        () -> new LOD(camera, entity.blockPosition()).isVeryNear()));
 
         matrixStack.popPose();
     }
