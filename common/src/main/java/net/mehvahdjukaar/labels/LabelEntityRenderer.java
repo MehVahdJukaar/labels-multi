@@ -15,6 +15,7 @@ import net.mehvahdjukaar.moonlight.api.resources.textures.SpriteUtils;
 import net.mehvahdjukaar.moonlight.api.resources.textures.TextureImage;
 import net.mehvahdjukaar.moonlight.api.util.math.colors.BaseColor;
 import net.mehvahdjukaar.moonlight.api.util.math.colors.RGBColor;
+import net.mehvahdjukaar.moonlight.core.misc.McMetaFile;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -37,11 +38,9 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.checkerframework.checker.units.qual.A;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
-import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -163,7 +162,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
 
         if (recolor) SpriteUtils.grayscaleImage(image);
 
-        TextureImage originalTexture = TextureImage.of(image, null);
+        TextureImage originalTexture = TextureImage.of(image, (McMetaFile) null);
         TextureImage outlineTexture; //close this!
         if (outline) {
             List<Pair<Integer, Integer>> outlinePosition = new ArrayList<>();
