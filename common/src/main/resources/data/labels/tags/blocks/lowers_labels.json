@@ -2,7 +2,7 @@
   "values": [
     {
       "required": false,
-      "value": "#supplementaries:sacks"
+      "id": "#supplementaries:sacks"
     }
   ]
 }

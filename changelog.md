@@ -1,1 +1,1 @@
-some more hacks on fabric to prevent random unidentified visual glitches
+rewrote a big chunk of label entity code. This should finallyfix all those desync issues once and for all. Yes i finally bit the bullet and just redid it from scratch
