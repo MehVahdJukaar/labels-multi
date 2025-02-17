@@ -13,28 +13,32 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityDimensions;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.Pose;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.decoration.HangingEntity;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Predicate;
@@ -50,8 +54,9 @@ public class LabelEntity extends Entity {
     private static final EntityDataAccessor<Boolean> DATA_TEXT = SynchedEntityData.defineId(LabelEntity.class,
             EntityDataSerializers.BOOLEAN);
 
-    private AttachFace attachFace = AttachFace.WALL;
-    private Direction direction = Direction.NORTH;
+    private AttachFace attachFace = null;
+    private Direction direction = null;
+    private int checkInterval;
 
     //client
     private boolean needsVisualRefresh = true;
@@ -74,7 +79,7 @@ public class LabelEntity extends Entity {
         //pos parameter will be used for support position only
 
         //here set correct position based on block
-        float offset = 1 / 32f;
+        float offset = lab.getThickness() / 32f;
         Vec3 step = new Vec3(clickedFace.step());
         Vec3 stepSQ = step.multiply(step);
         Vec3 invStep = new Vec3(1, 1, 1).subtract(stepSQ);
@@ -82,7 +87,8 @@ public class LabelEntity extends Entity {
         BlockPos pos = BlockPos.containing(hitVec);
         Vec3 newPos = pos.getCenter().multiply(invStep)
                 .add(stepSQ.multiply(hitVec.add(step.scale(offset))));
-        lab.setPosRaw(newPos.x, newPos.y, newPos.z);
+        //this also sets the bounding box
+        lab.setPos(newPos.x, newPos.y, newPos.z);
 
         return lab;
     }
@@ -100,7 +106,7 @@ public class LabelEntity extends Entity {
     }
 
 
-    public void setOrientation(Direction horizontalOrientation, AttachFace face) {
+    public void setOrientation(@NotNull Direction horizontalOrientation, @NotNull AttachFace face) {
         this.attachFace = face;
         this.direction = horizontalOrientation;
         if (face != AttachFace.WALL) {
@@ -120,6 +126,10 @@ public class LabelEntity extends Entity {
 
     @Override
     protected AABB makeBoundingBox() {
+        //can happen if called in constructor
+        if (this.attachFace == null || this.direction == null) {
+            return super.makeBoundingBox();
+        }
         Level level = level();
         BlockPos supportPos = calculateBehindPos();
 
@@ -136,9 +146,8 @@ public class LabelEntity extends Entity {
         } else {
             offset = -0.5 + shape.min(dir.getAxis());
         }
-        BlockPos pos = this.getOnPos();
-        Vec3 v = Vec3.atCenterOf(pos);
-        offset -= 1 / 32f;
+        Vec3 v = Vec3.atCenterOf(supportPos);
+        offset -= this.getThickness() / 32f;
 
         if (dir.getAxis() != Direction.Axis.Y && support.is(LabelsMod.LOWERS_LABELS)) {
             v = v.add(0, -0.125, 0);
@@ -155,11 +164,12 @@ public class LabelEntity extends Entity {
         double width = this.getWidth();
         double height = this.getHeight();
         double zWidth = this.getWidth();
+        double thickness = this.getThickness();
         Direction.Axis axis = dir.getAxis();
         switch (axis) {
-            case X -> width = 1.0D;
-            case Y -> height = 1.0D;
-            case Z -> zWidth = 1.0D;
+            case X -> width = thickness;
+            case Y -> height = thickness;
+            case Z -> zWidth = thickness;
         }
         width /= 32;
         height /= 32;
@@ -175,11 +185,12 @@ public class LabelEntity extends Entity {
 
     @Override
     public void recreateFromPacket(ClientboundAddEntityPacket packet) {
-        super.recreateFromPacket(packet);
         int i = packet.getData();
         Direction direction = Direction.from2DDataValue((i & 0xFF00) >> 8);
         AttachFace attachFace = AttachFace.values()[i & 0xFF];
         this.setOrientation(direction, attachFace);
+        //before super since facing is needed for BB calculations set in setPos
+        super.recreateFromPacket(packet);
     }
 
     @Override
@@ -248,14 +259,17 @@ public class LabelEntity extends Entity {
     }
 
     public int getWidth() {
-        return 10;
+        return 8;
     }
 
     public int getHeight() {
         return 10;
     }
 
-    //@Override
+    public int getThickness() {
+        return 1;
+    }
+
     public void dropItem(@Nullable Entity entity) {
         if (this.level().getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
             this.playSound(SoundEvents.PAINTING_BREAK, 1.0F, 1.0F);
@@ -267,7 +281,16 @@ public class LabelEntity extends Entity {
 
     @Override
     public void tick() {
-        super.tick();
+        if (!this.level().isClientSide) {
+            this.checkBelowWorld();
+            if (this.checkInterval++ == 100) {
+                this.checkInterval = 0;
+                if (!this.isRemoved() && !this.survives()) {
+                    this.discard();
+                    this.dropItem(null);
+                }
+            }
+        }
     }
 
     // @Override
@@ -305,6 +328,137 @@ public class LabelEntity extends Entity {
     @Override
     public ItemStack getPickResult() {
         return LabelsMod.LABEL_ITEM.get().getDefaultInstance();
+    }
+
+    //Hanging entity stuff
+
+    //  @Override
+    public boolean survives() {
+        Level level = level();
+        if (!level.noCollision(this)) {
+            return false;
+        }
+        BlockPos supportingPos = calculateBehindPos();
+        Direction behindDIr = this.getBehindDirection();
+        BlockState state = level.getBlockState(supportingPos);
+        var blockShape = state.getBlockSupportShape(level, supportingPos);
+        if (blockShape.isEmpty() || !state.isSolid()) {
+            return false;
+        }
+        var bbShape = this.getBoundingBox();
+        blockShape = blockShape.move(supportingPos.getX(), supportingPos.getY(), supportingPos.getZ());
+
+        //check if shapes are touching
+        if (behindDIr.getAxisDirection() == Direction.AxisDirection.POSITIVE) {
+            if (!DoubleMath.fuzzyEquals(bbShape.max(behindDIr.getAxis()), blockShape.min(behindDIr.getAxis()), 1.0E-7))
+                return false;
+        } else {
+            if (!DoubleMath.fuzzyEquals(bbShape.min(behindDIr.getAxis()), blockShape.max(behindDIr.getAxis()), 1.0E-7))
+                return false;
+        }
+
+        return level.getEntities(this, this.getBoundingBox(), HANGING_ENTITY).isEmpty();
+    }
+
+    protected static final Predicate<Entity> HANGING_ENTITY = (entity) ->
+            entity instanceof HangingEntity || entity instanceof LabelEntity;
+
+    @Override
+    public boolean isPickable() {
+        return true;
+    }
+
+    @Override
+    public boolean skipAttackInteraction(Entity entity) {
+        if (entity instanceof Player player) {
+            return !this.level().mayInteract(player, this.getOnPos()) ? true : this.hurt(this.damageSources().playerAttack(player), 0.0F);
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean hurt(DamageSource source, float amount) {
+        if (this.isInvulnerableTo(source)) {
+            return false;
+        } else {
+            if (!this.isRemoved() && !this.level().isClientSide) {
+                this.kill();
+                this.markHurt();
+                this.dropItem(source.getEntity());
+            }
+            return true;
+        }
+    }
+
+    @Override
+    public void move(MoverType type, Vec3 pos) {
+        if (!this.level().isClientSide && !this.isRemoved() && pos.lengthSqr() > 0.0) {
+            this.kill();
+            this.dropItem(null);
+        }
+    }
+
+    @Override
+    public void push(double x, double y, double z) {
+        if (!this.level().isClientSide && !this.isRemoved() && x * x + y * y + z * z > 0.0) {
+            this.kill();
+            this.dropItem(null);
+        }
+    }
+
+    @Override
+    public ItemEntity spawnAtLocation(ItemStack stack, float offsetY) {
+        ItemEntity itemEntity = new ItemEntity(this.level(), this.getX() + (double) ((float) this.direction.getStepX() * 0.15F), this.getY() + (double) offsetY, this.getZ() + (double) ((float) this.direction.getStepZ() * 0.15F), stack);
+        itemEntity.setDefaultPickUpDelay();
+        this.level().addFreshEntity(itemEntity);
+        return itemEntity;
+    }
+
+    //idk why armor stands have to false. false makes them pop on load
+    @Override
+    protected boolean repositionEntityAfterLoad() {
+        return true;
+    }
+
+    @Override
+    public float rotate(Rotation transformRotation) {
+        if (this.direction.getAxis() != Direction.Axis.Y) {
+            switch (transformRotation) {
+                case CLOCKWISE_180 -> this.direction = this.direction.getOpposite();
+                case COUNTERCLOCKWISE_90 -> this.direction = this.direction.getCounterClockWise();
+                case CLOCKWISE_90 -> this.direction = this.direction.getClockWise();
+            }
+        }
+
+        float f = Mth.wrapDegrees(this.getYRot());
+        switch (transformRotation) {
+            case CLOCKWISE_180 -> {
+                return f + 180.0F;
+            }
+            case COUNTERCLOCKWISE_90 -> {
+                return f + 90.0F;
+            }
+            case CLOCKWISE_90 -> {
+                return f + 270.0F;
+            }
+            default -> {
+                return f;
+            }
+        }
+    }
+
+    @Override
+    public float mirror(Mirror transformMirror) {
+        return this.rotate(transformMirror.getRotation(this.direction));
+    }
+
+    @Override
+    public void thunderHit(ServerLevel level, LightningBolt lightning) {
+    }
+
+    @Override
+    public void refreshDimensions() {
     }
 
 
@@ -367,37 +521,6 @@ public class LabelEntity extends Entity {
         }
     }
 
-    //  @Override
-    public boolean survives() {
-        if (true) return true;
-        Level level = level();
-        if (!level.noCollision(this)) {
-            return false;
-        }
-        BlockPos supportingPos = calculateBehindPos();
-        Direction behindDIr = this.getBehindDirection();
-        BlockState state = level.getBlockState(supportingPos);
-        var blockShape = state.getBlockSupportShape(level, supportingPos);
-        if (blockShape.isEmpty() || !state.isSolid()) {
-            return false;
-        }
-        var bbShape = this.getBoundingBox();
-        blockShape = blockShape.move(supportingPos.getX(), supportingPos.getY(), supportingPos.getZ());
-
-        //check if shapes are touching
-        if (behindDIr.getAxisDirection() == Direction.AxisDirection.POSITIVE) {
-            if (!DoubleMath.fuzzyEquals(bbShape.max(behindDIr.getAxis()), blockShape.min(behindDIr.getAxis()), 1.0E-7))
-                return false;
-        } else {
-            if (!DoubleMath.fuzzyEquals(bbShape.min(behindDIr.getAxis()), blockShape.max(behindDIr.getAxis()), 1.0E-7))
-                return false;
-        }
-
-        return level.getEntities(this, this.getBoundingBox(), HANGING_ENTITY).isEmpty();
-    }
-
-    protected static final Predicate<Entity> HANGING_ENTITY = (entity) ->
-            entity instanceof HangingEntity || entity instanceof LabelEntity;
 
     public boolean needsVisualUpdate() {
         if (this.needsVisualRefresh) {

@@ -33,8 +33,7 @@ public class LabelItem extends Item {
             return InteractionResult.FAIL;
         } else {
             Level level = pContext.getLevel();
-if(level.isClientSide)return InteractionResult.SUCCESS;
-            LabelEntity label = LabelEntity.placeOnFace(level, pContext.getClickLocation(), direction,facing);
+            LabelEntity label = LabelEntity.placeOnFace(level, pContext.getClickLocation(), direction, facing);
 
             CompoundTag compoundtag = itemstack.getTag();
             if (compoundtag != null) {
@@ -48,7 +47,7 @@ if(level.isClientSide)return InteractionResult.SUCCESS;
                     level.addFreshEntity(label);
                 }
 
-                if(!player.getAbilities().instabuild) itemstack.shrink(1);
+                if (!player.getAbilities().instabuild) itemstack.shrink(1);
                 return InteractionResult.sidedSuccess(level.isClientSide);
             }
         }

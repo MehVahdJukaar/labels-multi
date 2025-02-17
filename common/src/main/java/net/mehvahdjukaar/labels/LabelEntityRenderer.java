@@ -73,7 +73,6 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
             AABB bb = new AABB(vec3, vec3.add(1, 1, 1)).inflate(0.01);
             LevelRenderer.renderLineBox(poseStack, lines, bb, 1.0F, 0, 0, 1.0F);
             poseStack.popPose();
-            this.renderNameTag(entity, Component.literal(entity.getDirection().toString()), poseStack, buffer, LightTexture.FULL_BRIGHT);
         }
 
         poseStack.pushPose();
