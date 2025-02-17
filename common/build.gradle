@@ -1,19 +1,18 @@
 architectury {
-    common(rootProject.enabled_platforms.split(","))
+    common(enabled_platforms.split(",")){
+        //it.platformPackage("neoforge", "forge")
+    }
 }
-
 loom {
-    accessWidenerPath = file("src/main/resources/labels.accesswidener")
+    accessWidenerPath = file("src/main/resources/${mod_id}.accesswidener")
 }
 
 dependencies {
-    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    // We depend on fabric loader here to use the fabric @Environment annotations and get the mixin dependencies
+    // Do NOT use other classes from fabric loader
+    modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
 
-    implementation(annotationProcessor("io.github.llamalad7:mixinextras-fabric:0.3.6"))
-   // modImplementation("net.mehvahdjukaar:moonlight:${project.moonlight_version}")
-    modImplementation("curse.maven:selene-499980:6194749")
-    modImplementation ("curse.maven:supplementaries-412082:4707417")
-
+    modImplementation ("net.mehvahdjukaar:moonlight:${moonlight_version}")
 }
 
 publishing {
