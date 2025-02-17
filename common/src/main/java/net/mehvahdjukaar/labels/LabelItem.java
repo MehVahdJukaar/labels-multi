@@ -3,14 +3,18 @@ package net.mehvahdjukaar.labels;
 import dev.architectury.injectables.annotations.PlatformOnly;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemFrameItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
@@ -35,11 +39,10 @@ public class LabelItem extends Item {
             Level level = pContext.getLevel();
             LabelEntity label = LabelEntity.placeOnFace(level, pContext.getClickLocation(), direction, facing);
 
-            CompoundTag compoundtag = itemstack.getTag();
-            if (compoundtag != null) {
-                EntityType.updateCustomEntityTag(level, player, label, compoundtag);
+            CustomData customData = itemstack.getOrDefault(DataComponents.ENTITY_DATA, CustomData.EMPTY);
+            if (!customData.isEmpty()) {
+                EntityType.updateCustomEntityTag(level, player, label, customData);
             }
-
             if (label.survives()) {
                 if (!level.isClientSide) {
                     label.playPlacementSound();

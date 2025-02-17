@@ -114,8 +114,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
 
                 VertexConsumer vertexConsumer = buffer.getBuffer(RenderType.entityCutout(tex.getTextureLocation()));
 
-                Matrix4f tr = poseStack.last().pose();
-                Matrix3f normal = poseStack.last().normal();
+                PoseStack.Pose pose = poseStack.last();
                 int overlay = OverlayTexture.NO_OVERLAY;
 
                 float z = 15.8f / 16f;
@@ -128,11 +127,11 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
                 boolean glow = entity.hasGlowInk();
                 if (glow) light = LightTexture.FULL_BRIGHT;
 
-                vertexConsumer.vertex(tr, -s, -s, 0).color(1f, 1f, 1f, 1f).uv(1f, 0f).overlayCoords(overlay).uv2(light).normal(normal, 0f, 0f, -1f).endVertex();
-                vertexConsumer.vertex(tr, -s, s, 0).color(1f, 1f, 1f, 1f).uv(1f, 1f).overlayCoords(overlay).uv2(light).normal(normal, 0f, 0f, -1f).endVertex();
+                vertexConsumer.addVertex(pose, -s, -s, 0).setColor(1f, 1f, 1f, 1f).setUv(1f, 0f).setOverlay(overlay).setLight(light).setNormal(pose, 0f, 0f, -1f);
+                vertexConsumer.addVertex(pose, -s, s, 0).setColor(1f, 1f, 1f, 1f).setUv(1f, 1f).setOverlay(overlay).setLight(light).setNormal(pose, 0f, 0f, -1f);
 
-                vertexConsumer.vertex(tr, s, s, 0).color(1f, 1f, 1f, 1f).uv(0f, 1f).overlayCoords(overlay).uv2(light).normal(normal, 0f, 0f, -1f).endVertex();
-                vertexConsumer.vertex(tr, s, -s, 0).color(1f, 1f, 1f, 1f).uv(0f, 0f).overlayCoords(overlay).uv2(light).normal(normal, 0f, 0f, -1f).endVertex();
+                vertexConsumer.addVertex(pose, s, s, 0).setColor(1f, 1f, 1f, 1f).setUv(0f, 1f).setOverlay(overlay).setLight(light).setNormal(pose, 0f, 0f, -1f);
+                vertexConsumer.addVertex(pose, s, -s, 0).setColor(1f, 1f, 1f, 1f).setUv(0f, 0f).setOverlay(overlay).setLight(light).setNormal(pose, 0f, 0f, -1f);
 
                 poseStack.popPose();
 

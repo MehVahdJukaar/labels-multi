@@ -13,6 +13,7 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -22,8 +23,12 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.decoration.HangingEntity;
+import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
@@ -178,8 +183,8 @@ public class LabelEntity extends Entity {
     }
 
     @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return new ClientboundAddEntityPacket(this,
+    public Packet<ClientGamePacketListener> getAddEntityPacket(ServerEntity entity) {
+        return new ClientboundAddEntityPacket(this, entity,
                 ((this.direction.get2DDataValue() & 0xFF) << 8) | (this.attachFace.ordinal() & 0xFF));
     }
 
@@ -197,8 +202,9 @@ public class LabelEntity extends Entity {
     public void addAdditionalSaveData(CompoundTag tag) {
         ItemStack item = this.getItem();
         if (!item.isEmpty()) {
-            tag.put("Item", item.save(new CompoundTag()));
+            tag.put("Item", this.getItem().save(this.registryAccess()));
         }
+
         tag.putByte("Facing", (byte) this.direction.get2DDataValue());
         tag.putByte("AttachFace", (byte) this.attachFace.ordinal());
         tag.putBoolean("Glowing", this.hasGlowInk());
@@ -211,14 +217,14 @@ public class LabelEntity extends Entity {
 
     @Override
     public void readAdditionalSaveData(CompoundTag tag) {
-        CompoundTag compound = tag.getCompound("Item");
-        if (!compound.isEmpty()) {
-            ItemStack itemstack = ItemStack.of(compound);
-            if (itemstack.isEmpty()) {
-                LabelsMod.LOGGER.warn("Unable to load item from: {}", compound);
-            }
-            this.setItem(itemstack);
+        ItemStack itemStack;
+        if (tag.contains("Item", 10)) {
+            CompoundTag compoundTag = tag.getCompound("Item");
+            itemStack = ItemStack.parse(this.registryAccess(), compoundTag).orElse(ItemStack.EMPTY);
+        } else {
+            itemStack = ItemStack.EMPTY;
         }
+        this.setItem(itemStack);
         this.setOrientation(Direction.from2DDataValue(tag.getByte("Facing")),
                 AttachFace.values()[tag.getByte("AttachFace")]);
         this.setHasGlowInk(tag.getBoolean("Glowing"));
@@ -229,11 +235,11 @@ public class LabelEntity extends Entity {
     }
 
     @Override
-    protected void defineSynchedData() {
-        this.entityData.define(DATA_ITEM, ItemStack.EMPTY);
-        this.entityData.define(DATA_DYE_COLOR, (byte) -1);
-        this.entityData.define(DATA_GLOWING, false);
-        this.entityData.define(DATA_TEXT, false);
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        builder.define(DATA_ITEM, ItemStack.EMPTY);
+        builder.define(DATA_DYE_COLOR, (byte) -1);
+        builder.define(DATA_GLOWING, false);
+        builder.define(DATA_TEXT, false);
     }
 
     @Override
@@ -251,11 +257,6 @@ public class LabelEntity extends Entity {
                 recomputeTexture(this.getItem());
             }
         }
-    }
-
-    @Override
-    protected float getEyeHeight(Pose pPose, EntityDimensions pSize) {
-        return 0;
     }
 
     public int getWidth() {

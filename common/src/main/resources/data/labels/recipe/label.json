@@ -10,7 +10,7 @@
     }
   },
   "result": {
-    "item": "labels:label",
+    "id": "labels:label",
     "count": 4
   }
 }
