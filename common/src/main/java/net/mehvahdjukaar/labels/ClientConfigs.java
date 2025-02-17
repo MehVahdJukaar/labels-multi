@@ -3,8 +3,8 @@ package net.mehvahdjukaar.labels;
 import net.mehvahdjukaar.moonlight.api.client.texture_renderer.RenderedTexturesManager;
 import net.mehvahdjukaar.moonlight.api.platform.PlatHelper;
 import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigBuilder;
-import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigSpec;
 import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigType;
+import net.mehvahdjukaar.moonlight.api.platform.configs.ModConfigHolder;
 
 import java.util.function.Supplier;
 
@@ -14,7 +14,7 @@ public class ClientConfigs {
 
     }
 
-    public static final ConfigSpec CONFIG_SPEC;
+    public static final ModConfigHolder CONFIG_SPEC;
 
     public static final Supplier<Boolean> COLORED_TEXT;
     public static final Supplier<Boolean> OUTLINE;
@@ -41,7 +41,7 @@ public class ClientConfigs {
     }
 
     static {
-        if(PlatHelper.getPhysicalSide().isServer() && PlatHelper.isDev()){
+        if (PlatHelper.getPhysicalSide().isServer() && PlatHelper.isDev()) {
             throw new AssertionError("Tried to load client configs on server side");
         }
 
@@ -75,8 +75,7 @@ public class ClientConfigs {
         builder.pop();
         builder.onChange(RenderedTexturesManager::clearCache);
 
-        CONFIG_SPEC = builder.buildAndRegister();
-        CONFIG_SPEC.loadFromFile();
+        CONFIG_SPEC = builder.build();
     }
 
 }
