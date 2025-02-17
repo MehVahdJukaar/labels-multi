@@ -76,6 +76,7 @@ public class ClientConfigs {
         builder.onChange(RenderedTexturesManager::clearCache);
 
         CONFIG_SPEC = builder.build();
+        CONFIG_SPEC.forceLoad();
     }
 
 }

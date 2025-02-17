@@ -47,7 +47,9 @@ public class LabelsMod {
     public static final Supplier<EntityType<LabelEntity>> LABEL =
             regEntity(NAME, () -> (
                     EntityType.Builder.<LabelEntity>of(LabelEntity::new, MobCategory.MISC)
-                            .sized(0.5F, 0.5F).clientTrackingRange(10).updateInterval(Integer.MAX_VALUE))
+                            .eyeHeight(0)
+                            .sized(0.5F, 0.5F)
+                            .clientTrackingRange(10).updateInterval(Integer.MAX_VALUE))
             );
 
     public static final Supplier<Item> LABEL_ITEM = regItem(NAME, () -> new LabelItem(new Item.Properties()));
