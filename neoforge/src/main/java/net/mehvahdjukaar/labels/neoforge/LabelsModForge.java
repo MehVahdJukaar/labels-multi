@@ -1,6 +1,8 @@
 package net.mehvahdjukaar.labels.neoforge;
 
 import net.mehvahdjukaar.labels.LabelsMod;
+import net.mehvahdjukaar.moonlight.api.platform.RegHelper;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 
 /**
@@ -9,7 +11,8 @@ import net.neoforged.fml.common.Mod;
 @Mod(LabelsMod.MOD_ID)
 public class LabelsModForge {
 
-    public LabelsModForge() {
+    public LabelsModForge(IEventBus bus) {
+        RegHelper.startRegisteringFor(bus);
         LabelsMod.commonInit();
     }
 }
