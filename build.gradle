@@ -93,6 +93,24 @@ subprojects {
         }
     }
 
+    publishing {
+        repositories {
+            mavenLocal()
+
+            def nexusToken = providers.environmentVariable("NEXUS_TOKEN")
+            def nexusUser = providers.environmentVariable("NEXUS_USER")
+            if (nexusToken && nexusUser) {
+                maven {
+                    url = uri("https://registry.somethingcatchy.net/repository/maven-releases/")
+                    credentials {
+                        username = nexusUser.get()
+                        password = nexusToken.get()
+                    }
+                }
+            }
+        }
+    }
+
     var env = System.getenv()
     var modLoader = name
 
@@ -171,9 +189,8 @@ ext.replaceProperties = [
 
         neo_version          : neo_version,
         neo_version_range    : neo_version_range,
-        loader_version_range : loader_version_range,
+        loader_version_range : loader_version_range
 
-        moonlight_version_range: moonlight_version_range,
 ]
 
 // --- Utils
@@ -188,7 +205,7 @@ static def listGameVersions(String minVersion, String maxVersion) {
     return versions
 }
 
-tasks.register('buildAndpublishAll') {
+tasks.register('buildAndPublishAll') {
     dependsOn ':clean'
     dependsOn ':build'
     dependsOn ':neoforge:curseforge'
