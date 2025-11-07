@@ -35,7 +35,6 @@ public class LabelsMod {
     }
 
     public static void commonInit() {
-
         if (PlatHelper.getPhysicalSide().isClient()) {
             LabelsModClient.init();
         }
