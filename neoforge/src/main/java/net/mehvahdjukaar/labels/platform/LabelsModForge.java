@@ -1,4 +1,4 @@
-package net.mehvahdjukaar.labels.neoforge;
+package net.mehvahdjukaar.labels.platform;
 
 import net.mehvahdjukaar.labels.LabelsMod;
 import net.mehvahdjukaar.moonlight.api.platform.RegHelper;

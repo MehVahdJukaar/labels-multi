@@ -1,4 +1,4 @@
-package net.mehvahdjukaar.labels.fabric;
+package net.mehvahdjukaar.labels.platform;
 
 import net.fabricmc.api.ModInitializer;
 import net.mehvahdjukaar.labels.LabelsMod;

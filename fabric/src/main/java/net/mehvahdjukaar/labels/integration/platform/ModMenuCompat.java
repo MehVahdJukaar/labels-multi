@@ -1,4 +1,4 @@
-package net.mehvahdjukaar.labels.integration.fabric;
+package net.mehvahdjukaar.labels.integration.platform;
 
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
