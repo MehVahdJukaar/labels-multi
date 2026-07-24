@@ -44,19 +44,18 @@ public class LabelsMod {
     }
 
     public static final Supplier<EntityType<LabelEntity>> LABEL =
-            regEntity(NAME, () -> (
-                    EntityType.Builder.<LabelEntity>of(LabelEntity::new, MobCategory.MISC)
-                            .eyeHeight(0)
-                            .sized(0.5F, 0.5F)
-                            .clientTrackingRange(10).updateInterval(Integer.MAX_VALUE))
+            regEntity(NAME, EntityType.Builder.<LabelEntity>of(LabelEntity::new, MobCategory.MISC)
+                    .eyeHeight(0)
+                    .sized(0.5F, 0.5F)
+                    .clientTrackingRange(10).updateInterval(Integer.MAX_VALUE)
             );
 
     public static final Supplier<Item> LABEL_ITEM = regItem(NAME, () -> new LabelItem(new Item.Properties()));
 
     public static final TagKey<Block> LOWERS_LABELS = TagKey.create(Registries.BLOCK, res("lowers_labels"));
 
-    public static <T extends Entity> Supplier<EntityType<T>> regEntity(String name, Supplier<EntityType.Builder<T>> builder) {
-        return RegHelper.registerEntityType(res(name), () -> builder.get().build(name));
+    public static <T extends Entity> Supplier<EntityType<T>> regEntity(String name, EntityType.Builder<T> builder) {
+        return RegHelper.registerEntityType(res(name), builder);
     }
 
     public static <T extends Item> Supplier<T> regItem(String name, Supplier<T> sup) {
