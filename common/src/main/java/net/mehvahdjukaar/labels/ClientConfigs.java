@@ -1,6 +1,6 @@
 package net.mehvahdjukaar.labels;
 
-import net.mehvahdjukaar.moonlight.api.client.texture_renderer.RenderedTexturesManager;
+import net.mehvahdjukaar.moonlight.api.client.texture_renderer.DynamicTextureRenderer;
 import net.mehvahdjukaar.moonlight.api.platform.PlatHelper;
 import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigBuilder;
 import net.mehvahdjukaar.moonlight.api.platform.configs.ConfigType;
@@ -47,13 +47,14 @@ public class ClientConfigs {
 
         ConfigBuilder builder = ConfigBuilder.create(LabelsMod.res("client"), ConfigType.CLIENT);
 
-        builder.push("general");
+        builder.icon("label").push("general");
         COLORED_TEXT = builder.comment("If text is enabled, allows it to accept the label dye color")
                 .define("colored_text", true);
         TEXTURE_SIZE = builder.comment("Item texture resolution. You might want to keep this multiples of 16")
                 .define("texture_resolution", 16, 8, 512);
         builder.pop();
-        builder.push("color_settings");
+
+        builder.icon("minecraft:red_dye").push("color_settings");
 
         //var dark = new RGBColor(76 / 255f, 49 / 255f, 19 / 255f, 1);//new RGBColor(64 / 255f, 34 / 255f, 0 / 255f, 1);
         //var light = new RGBColor(243 / 255f, 224 / 255f, 196 / 255f, 1);// new RGBColor(235 / 255f, 213 / 255f, 178 / 255f, 1);
@@ -64,16 +65,17 @@ public class ClientConfigs {
         //        .defineColor("dark_color", dark.toInt());
         // LIGHT_COLOR = builder.comment("Second color to use for recoloring. Middle colors are interpolated between the two")
         //        .defineColor("light_color", light.toInt());
-        COLOR_PRESET = builder.comment("picks one of the 3 presets for dyes on labels. " +
-                        "This simply changes the texture that is used." +
-                        "Requires a resource pack reload" +
+        COLOR_PRESET = builder.comment("Picks one of the presets for dyes on labels. " +
+                        "This simply changes the texture that is used. " +
+                        "Requires a resource pack reload. " +
                         "Note that you can always change this manually with a resource pack to control all the colors individually")
                 .define("color_texture_preset", Preset.PENCIL);
         REDUCE_COLORS = builder.comment("Reduce colors of original image before processing. Makes 3d blocks more 2d like by giving them a limited palette")
                 .define("limit_palette", true);
-        OUTLINE = builder.comment("Adds an outline to label images").define("outline", true);
+        OUTLINE = builder.comment("Draws a dark outline around the label image. Only applies when 'recolor_texture' is on, as the outline shade is taken from the recolor palette")
+                .define("outline", true);
         builder.pop();
-        builder.onChange(RenderedTexturesManager::clearCache);
+        builder.onChange(DynamicTextureRenderer::clearCache);
 
         CONFIG_SPEC = builder.build();
         CONFIG_SPEC.forceLoad();

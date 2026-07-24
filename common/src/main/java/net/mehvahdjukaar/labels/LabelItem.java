@@ -1,6 +1,6 @@
 package net.mehvahdjukaar.labels;
 
-import dev.architectury.injectables.annotations.PlatformOnly;
+import net.mehvahdjukaar.candlelight.api.VirtualOverride;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
@@ -62,7 +62,7 @@ public class LabelItem extends Item {
         return super.use(level, player, usedHand);
     }
 
-    @PlatformOnly(PlatformOnly.FORGE)
+    @VirtualOverride("neoforge")
     public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
         InteractionResult res;
         if (context.getPlayer().isCreative()) {
@@ -75,7 +75,7 @@ public class LabelItem extends Item {
         return res.consumesAction() ? res : InteractionResult.PASS;
     }
 
-    @PlatformOnly(PlatformOnly.FORGE)
+    @VirtualOverride("neoforge")
     public boolean doesSneakBypassUse(ItemStack stack, LevelReader level, BlockPos pos, Player player) {
         return true;
     }

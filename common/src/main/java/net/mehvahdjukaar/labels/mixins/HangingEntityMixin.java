@@ -10,9 +10,8 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(HangingEntity.class)
 public class HangingEntityMixin {
 
-    @ModifyReturnValue(method = "method_6890",
-    at = @At("RETURN"))
-    private static boolean amendments$modifyHangingEntityCheck(boolean original, Entity entity){
+    @ModifyReturnValue(method = {"method_6890", "lambda$static$0"},at = @At("RETURN"))
+    private static boolean labels$modifyHangingEntityCheck(boolean original, Entity entity){
         return original || entity instanceof LabelEntity;
     }
 }

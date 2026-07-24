@@ -14,5 +14,5 @@ dependencies {
     modImplementation("net.mehvahdjukaar:moonlight-neoforge:${moonlight_version}")
     accessTransformers("net.mehvahdjukaar:moonlight-neoforge:${moonlight_version}")
 
-    modImplementation("dev.engine-room.flywheel:flywheel-neoforge-${flywheel_version}")
+   // modImplementation("dev.engine-room.flywheel:flywheel-neoforge-${flywheel_version}")
 }
