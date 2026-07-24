@@ -1,1 +1,1 @@
--improved outline generation
+more configs

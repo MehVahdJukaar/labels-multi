@@ -18,10 +18,19 @@ public class ClientConfigs {
 
     public static final Supplier<Boolean> COLORED_TEXT;
     public static final Supplier<Boolean> OUTLINE;
+    public static final Supplier<OutlinePosition> OUTLINE_POSITION;
+    public static final Supplier<Integer> OUTLINE_THICKNESS;
     public static final Supplier<Boolean> IS_RECOLORED;
     public static final Supplier<Boolean> REDUCE_COLORS;
     public static final Supplier<Integer> TEXTURE_SIZE;
     public static final Supplier<Preset> COLOR_PRESET;
+
+    public enum OutlinePosition {
+        // grows into the transparent pixels around the item
+        OUTSIDE,
+        // drawn over the item's own edge pixels
+        INSIDE
+    }
 
     public enum Preset {
         DEFAULT(""),
@@ -74,6 +83,10 @@ public class ClientConfigs {
                 .define("limit_palette", true);
         OUTLINE = builder.comment("Draws a dark outline around the label image. Only applies when 'recolor_texture' is on, as the outline shade is taken from the recolor palette")
                 .define("outline", true);
+        OUTLINE_POSITION = builder.comment("Where the outline is drawn: OUTSIDE grows into the transparent area around the item, INSIDE is painted over the item's own edge pixels")
+                .define("outline_position", OutlinePosition.OUTSIDE);
+        OUTLINE_THICKNESS = builder.comment("How many pixels thick the outline is")
+                .define("outline_thickness", 1, 1, 8);
         builder.pop();
         builder.onChange(DynamicTextureRenderer::clearCache);
 

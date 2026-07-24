@@ -154,7 +154,9 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
         }
 
         //taken off the untouched alpha channel, before anything writes to the image
-        boolean[] outlineMask = outline ? findOutlinePixels(image) : null;
+        boolean inside = ClientConfigs.OUTLINE_POSITION.get() == ClientConfigs.OutlinePosition.INSIDE;
+        int thickness = ClientConfigs.OUTLINE_THICKNESS.get();
+        boolean[] outlineMask = outline ? findOutlinePixels(image, thickness, inside) : null;
 
         if (recolor) SpriteUtils.grayscaleImage(image);
 
@@ -204,20 +206,62 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity> {
         //image isn't closed as TextureImage just wraps native image so we cant close that
     }
 
-    //transparent pixels touching the item. Reads only, so growing the outline can never feed back into itself
-    private static boolean[] findOutlinePixels(NativeImage image) {
+    //Marks the pixels the outline should cover. Reads only off the alpha channel, so growing it can never feed back into itself.
+    //OUTSIDE marks transparent pixels around the item, INSIDE marks the item's own edge pixels. Thickness grows the ring by that many pixels.
+    private static boolean[] findOutlinePixels(NativeImage image, int thickness, boolean inside) {
         int width = image.getWidth();
         int height = image.getHeight();
         boolean[] mask = new boolean[width * height];
+        boolean[] frontier = new boolean[width * height];
+
+        //first ring right at the silhouette boundary
         SpriteUtils.forEachPixel(image, (x, y) -> {
-            if (!isTransparent(image, x, y)) return;
-            boolean touchesItem = (x > 0 && !isTransparent(image, x - 1, y)) ||
-                    (x < width - 1 && !isTransparent(image, x + 1, y)) ||
-                    (y > 0 && !isTransparent(image, x, y - 1)) ||
-                    (y < height - 1 && !isTransparent(image, x, y + 1));
-            if (touchesItem) mask[y * width + x] = true;
+            boolean transparent = isTransparent(image, x, y);
+            boolean onOutline;
+            if (inside) {
+                //solid pixel touching transparency or the image border
+                onOutline = !transparent && (x == 0 || x == width - 1 || y == 0 || y == height - 1 ||
+                        isTransparent(image, x - 1, y) || isTransparent(image, x + 1, y) ||
+                        isTransparent(image, x, y - 1) || isTransparent(image, x, y + 1));
+            } else {
+                //transparent pixel touching the item
+                onOutline = transparent && ((x > 0 && !isTransparent(image, x - 1, y)) ||
+                        (x < width - 1 && !isTransparent(image, x + 1, y)) ||
+                        (y > 0 && !isTransparent(image, x, y - 1)) ||
+                        (y < height - 1 && !isTransparent(image, x, y + 1)));
+            }
+            if (onOutline) {
+                mask[y * width + x] = true;
+                frontier[y * width + x] = true;
+            }
         });
+
+        //dilate the ring for the remaining thickness. OUTSIDE spreads into transparent pixels, INSIDE into solid ones.
+        boolean[] current = frontier;
+        for (int step = 1; step < thickness; step++) {
+            boolean[] next = new boolean[width * height];
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    if (!current[y * width + x]) continue;
+                    growOutline(image, mask, next, x - 1, y, width, inside);
+                    growOutline(image, mask, next, x + 1, y, width, inside);
+                    growOutline(image, mask, next, x, y - 1, width, inside);
+                    growOutline(image, mask, next, x, y + 1, width, inside);
+                }
+            }
+            current = next;
+        }
         return mask;
+    }
+
+    private static void growOutline(NativeImage image, boolean[] mask, boolean[] next, int x, int y, int width, boolean inside) {
+        if (x < 0 || y < 0 || x >= width || y >= image.getHeight()) return;
+        int idx = y * width + x;
+        if (mask[idx]) return;
+        //INSIDE eats into the item, OUTSIDE fills the surrounding transparency
+        if (isTransparent(image, x, y) == inside) return;
+        mask[idx] = true;
+        next[idx] = true;
     }
 
     private static boolean isTransparent(NativeImage image, int x, int y) {
