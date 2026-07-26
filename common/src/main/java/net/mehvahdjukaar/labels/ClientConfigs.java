@@ -84,7 +84,7 @@ public class ClientConfigs {
         OUTLINE = builder.comment("Draws a dark outline around the label image. Only applies when 'recolor_texture' is on, as the outline shade is taken from the recolor palette")
                 .define("outline", true);
         OUTLINE_POSITION = builder.comment("Where the outline is drawn: OUTSIDE grows into the transparent area around the item, INSIDE is painted over the item's own edge pixels")
-                .define("outline_position", OutlinePosition.OUTSIDE);
+                .define("outline_position", OutlinePosition.INSIDE);
         OUTLINE_THICKNESS = builder.comment("How many pixels thick the outline is")
                 .define("outline_thickness", 1, 1, 8);
         builder.pop();
