@@ -217,7 +217,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity, LabelEntity
 
             if (outline) {
                 SpriteUtils.forEachPixel(image, (x, y) -> {
-                    if (outlineMask[y * image.getWidth() + x]) SpriteUtils.setPixel(image, x, y, outlineColor);
+                    if (outlineMask[y * image.getWidth() + x]) image.setPixelABGR(x, y, outlineColor);
                 });
             }
         }
@@ -283,7 +283,7 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity, LabelEntity
     }
 
     private static boolean isTransparent(NativeImage image, int x, int y) {
-        return RGBColor.getA(SpriteUtils.getPixel(image, x, y)) == 0;
+        return RGBColor.getA(image.getPixelABGR(x, y)) == 0;
     }
 
     //like with respriter but faster as palettes are already same size
@@ -291,12 +291,12 @@ public class LabelEntityRenderer extends EntityRenderer<LabelEntity, LabelEntity
         assert old.size() <= newPalette.size() : "Palettes must have same size";
         SpriteUtils.forEachPixel(image, (x, y) -> {
 
-            int c = SpriteUtils.getPixel(image, x, y);
+            int c = image.getPixelABGR(x, y);
             //manual recolor cause faster since we are iterating anyway
             for (int i = 0; i < old.size(); i++) {
                 if (old.getValues().get(i).value() == c) {
                     c = newPalette.getValues().get(i).value();
-                    SpriteUtils.setPixel(image, x, y, c);
+                    image.setPixelABGR(x, y, c);
                     break;
                 }
             }
