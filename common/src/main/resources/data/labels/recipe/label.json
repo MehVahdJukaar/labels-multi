@@ -5,9 +5,7 @@
     "00"
   ],
   "key": {
-    "0": {
-      "item": "minecraft:paper"
-    }
+    "0": "minecraft:paper"
   },
   "result": {
     "id": "labels:label",

@@ -4,7 +4,7 @@ import com.mojang.datafixers.util.Pair;
 import net.mehvahdjukaar.moonlight.api.resources.textures.SpriteUtils;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
-import net.minecraft.util.FastColor;
+import net.minecraft.util.ARGB;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.item.DyeColor;
 import org.jetbrains.annotations.Nullable;
@@ -47,7 +47,7 @@ public class ColorManager extends SimplePreparableReloadListener<List<Integer>> 
                 int second = d.getTextColor();
                 if (first == second) second = d.getMapColor().col;
                 if (first == second) {
-                    second = FastColor.ARGB32.multiply(first, 0x101010ff);
+                    second = ARGB.multiply(first, 0x101010ff);
                 }
                 COLORS.put(d, Pair.of(first, second));
             }

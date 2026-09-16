@@ -5,14 +5,13 @@ import net.mehvahdjukaar.moonlight.api.platform.ForgeHelper;
 import net.mehvahdjukaar.moonlight.api.util.Utils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -28,18 +27,19 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.decoration.HangingEntity;
-import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
+import net.minecraft.world.level.gamerules.GameRules;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -66,7 +66,7 @@ public class LabelEntity extends Entity {
     //client
     private boolean needsVisualRefresh = true;
     @Nullable
-    private ResourceLocation textureId;
+    private Identifier textureId;
     private float scale;
     private FormattedCharSequence[] labelText;
 
@@ -99,7 +99,11 @@ public class LabelEntity extends Entity {
     }
 
     public BlockPos calculateBehindPos() {
-        return BlockPos.containing(this.position().relative(this.getBehindDirection(), 1 / 16f));
+        return calculateBehindPos(this.position());
+    }
+
+    private BlockPos calculateBehindPos(Vec3 from) {
+        return BlockPos.containing(from.relative(this.getBehindDirection(), 1 / 16f));
     }
 
     private Direction getBehindDirection() {
@@ -130,18 +134,18 @@ public class LabelEntity extends Entity {
 
 
     @Override
-    protected AABB makeBoundingBox() {
+    protected AABB makeBoundingBox(Vec3 position) {
         //can happen if called in constructor
         if (this.attachFace == null || this.direction == null) {
-            return super.makeBoundingBox();
+            return super.makeBoundingBox(position);
         }
         Level level = level();
-        BlockPos supportPos = calculateBehindPos();
+        BlockPos supportPos = calculateBehindPos(position);
 
         BlockState support = level.getBlockState(supportPos);
         var shape = support.getBlockSupportShape(level, supportPos);
         if (shape.isEmpty()) {
-            return super.makeBoundingBox(); //wait for survives to be called so this will be removed
+            return super.makeBoundingBox(position); //wait for survives to be called so this will be removed
         }
         double offset;
         Direction dir = this.getBehindDirection();
@@ -199,39 +203,30 @@ public class LabelEntity extends Entity {
     }
 
     @Override
-    public void addAdditionalSaveData(CompoundTag tag) {
+    protected void addAdditionalSaveData(ValueOutput output) {
         ItemStack item = this.getItem();
         if (!item.isEmpty()) {
-            tag.put("Item", this.getItem().save(this.registryAccess()));
+            output.store("Item", ItemStack.CODEC, item);
         }
 
-        tag.putByte("Facing", (byte) this.direction.get2DDataValue());
-        tag.putByte("AttachFace", (byte) this.attachFace.ordinal());
-        tag.putBoolean("Glowing", this.hasGlowInk());
-        tag.putBoolean("Text", this.hasText());
+        output.putByte("Facing", (byte) this.direction.get2DDataValue());
+        output.putByte("AttachFace", (byte) this.attachFace.ordinal());
+        output.putBoolean("Glowing", this.hasGlowInk());
+        output.putBoolean("Text", this.hasText());
         DyeColor c = this.getColor();
         if (c != null) {
-            tag.putByte("DyeColor", (byte) c.ordinal());
+            output.putByte("DyeColor", (byte) c.ordinal());
         }
     }
 
     @Override
-    public void readAdditionalSaveData(CompoundTag tag) {
-        ItemStack itemStack;
-        if (tag.contains("Item", 10)) {
-            CompoundTag compoundTag = tag.getCompound("Item");
-            itemStack = ItemStack.parse(this.registryAccess(), compoundTag).orElse(ItemStack.EMPTY);
-        } else {
-            itemStack = ItemStack.EMPTY;
-        }
-        this.setItem(itemStack);
-        this.setOrientation(Direction.from2DDataValue(tag.getByte("Facing")),
-                AttachFace.values()[tag.getByte("AttachFace")]);
-        this.setHasGlowInk(tag.getBoolean("Glowing"));
-        this.setHasText(tag.getBoolean("Text"));
-        if (tag.contains("DyeColor")) {
-            this.getEntityData().set(DATA_DYE_COLOR, tag.getByte("DyeColor"));
-        }
+    protected void readAdditionalSaveData(ValueInput input) {
+        this.setItem(input.read("Item", ItemStack.CODEC).orElse(ItemStack.EMPTY));
+        this.setOrientation(Direction.from2DDataValue(input.getByteOr("Facing", (byte) 0)),
+                AttachFace.values()[input.getByteOr("AttachFace", (byte) 0)]);
+        this.setHasGlowInk(input.getBooleanOr("Glowing", false));
+        this.setHasText(input.getBooleanOr("Text", false));
+        this.getEntityData().set(DATA_DYE_COLOR, input.getByteOr("DyeColor", (byte) -1));
     }
 
     @Override
@@ -245,13 +240,9 @@ public class LabelEntity extends Entity {
     @Override
     public void onSyncedDataUpdated(EntityDataAccessor<?> pKey) {
         super.onSyncedDataUpdated(pKey);
-        if (level().isClientSide) {
+        if (level().isClientSide()) {
             if (pKey.equals(DATA_ITEM)) {
-                ItemStack itemstack = this.getItem();
-                if (!itemstack.isEmpty() && itemstack.getEntityRepresentation() != this) {
-                    itemstack.setEntityRepresentation(this);
-                }
-                recomputeTexture(itemstack);
+                recomputeTexture(this.getItem());
                 this.needsVisualRefresh = true;
             } else if (pKey.equals(DATA_DYE_COLOR)) {
                 recomputeTexture(this.getItem());
@@ -271,24 +262,24 @@ public class LabelEntity extends Entity {
         return 1;
     }
 
-    public void dropItem(@Nullable Entity entity) {
-        if (this.level().getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
+    public void dropItem(ServerLevel level, @Nullable Entity entity) {
+        if (level.getGameRules().get(GameRules.ENTITY_DROPS)) {
             this.playSound(SoundEvents.PAINTING_BREAK, 1.0F, 1.0F);
             if (!(entity instanceof Player player) || !player.getAbilities().instabuild) {
-                this.spawnAtLocation(LabelsMod.LABEL_ITEM.get());
+                this.spawnAtLocation(level, LabelsMod.LABEL_ITEM.get());
             }
         }
     }
 
     @Override
     public void tick() {
-        if (!this.level().isClientSide) {
+        if (this.level() instanceof ServerLevel level) {
             this.checkBelowWorld();
             if (this.checkInterval++ == 100) {
                 this.checkInterval = 0;
                 if (!this.isRemoved() && !this.survives()) {
                     this.discard();
-                    this.dropItem(null);
+                    this.dropItem(level, null);
                 }
             }
         }
@@ -301,9 +292,7 @@ public class LabelEntity extends Entity {
 
     public void setItem(ItemStack stack) {
         if (!stack.isEmpty()) {
-            stack = stack.copy();
-            stack.setCount(1);
-            stack.setEntityRepresentation(this);
+            stack = stack.copyWithCount(1);
         }
         this.getEntityData().set(DATA_ITEM, stack);
     }
@@ -372,21 +361,26 @@ public class LabelEntity extends Entity {
     @Override
     public boolean skipAttackInteraction(Entity entity) {
         if (entity instanceof Player player) {
-            return !this.level().mayInteract(player, this.getOnPos()) ? true : this.hurt(this.damageSources().playerAttack(player), 0.0F);
+            return !this.level().mayInteract(player, this.getOnPos()) || this.hurtOrSimulate(this.damageSources().playerAttack(player), 0.0F);
         } else {
             return false;
         }
     }
 
     @Override
-    public boolean hurt(DamageSource source, float amount) {
-        if (this.isInvulnerableTo(source)) {
+    public boolean hurtClient(DamageSource source) {
+        return !this.isInvulnerableToBase(source);
+    }
+
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        if (this.isInvulnerableToBase(source)) {
             return false;
         } else {
-            if (!this.isRemoved() && !this.level().isClientSide) {
-                this.kill();
+            if (!this.isRemoved()) {
+                this.kill(level);
                 this.markHurt();
-                this.dropItem(source.getEntity());
+                this.dropItem(level, source.getEntity());
             }
             return true;
         }
@@ -394,22 +388,22 @@ public class LabelEntity extends Entity {
 
     @Override
     public void move(MoverType type, Vec3 pos) {
-        if (!this.level().isClientSide && !this.isRemoved() && pos.lengthSqr() > 0.0) {
-            this.kill();
-            this.dropItem(null);
+        if (this.level() instanceof ServerLevel level && !this.isRemoved() && pos.lengthSqr() > 0.0) {
+            this.kill(level);
+            this.dropItem(level, null);
         }
     }
 
     @Override
     public void push(double x, double y, double z) {
-        if (!this.level().isClientSide && !this.isRemoved() && x * x + y * y + z * z > 0.0) {
-            this.kill();
-            this.dropItem(null);
+        if (this.level() instanceof ServerLevel level && !this.isRemoved() && x * x + y * y + z * z > 0.0) {
+            this.kill(level);
+            this.dropItem(level, null);
         }
     }
 
     @Override
-    public ItemEntity spawnAtLocation(ItemStack stack, float offsetY) {
+    public ItemEntity spawnAtLocation(ServerLevel level, ItemStack stack, float offsetY) {
         ItemEntity itemEntity = new ItemEntity(this.level(), this.getX() + (double) ((float) this.direction.getStepX() * 0.15F), this.getY() + (double) offsetY, this.getZ() + (double) ((float) this.direction.getStepZ() * 0.15F), stack);
         itemEntity.setDefaultPickUpDelay();
         this.level().addFreshEntity(itemEntity);
@@ -464,18 +458,18 @@ public class LabelEntity extends Entity {
 
 
     @Override
-    public InteractionResult interact(Player player, InteractionHand hand) {
+    public InteractionResult interact(Player player, InteractionHand hand, Vec3 location) {
         if (this.isRemoved()) return InteractionResult.PASS;
         ItemStack itemstack = player.getItemInHand(hand);
         Level level = level();
         if (player.isSecondaryUseActive() && !itemstack.isEmpty()) {
-            if (!level.isClientSide) {
+            if (!level.isClientSide()) {
                 this.setItem(itemstack);
                 if (!itemstack.isEmpty()) {
                     this.playSound(SoundEvents.INK_SAC_USE, 1.0F, 1.0F);
                 }
             }
-            return InteractionResult.sidedSuccess(level.isClientSide);
+            return InteractionResult.SUCCESS;
         } else {
             boolean consume = true;
             boolean success = false;
@@ -503,19 +497,12 @@ public class LabelEntity extends Entity {
                 if (consume && !player.isCreative()) {
                     itemstack.shrink(1);
                 }
-                if (player instanceof ServerPlayer serverPlayer) {
-                    //not a block
-                    //CriteriaTriggers.ITEM_USED_ON_BLOCK.trigger(serverPlayer, pos, itemstack);
-                }
-
-                return InteractionResult.sidedSuccess(level.isClientSide);
+                return InteractionResult.SUCCESS;
             }
-            InteractionResult interactionresult;
             if (player instanceof ServerPlayer sp) {
                 BlockPos p = this.calculateBehindPos();
-                interactionresult = sp.gameMode.useItemOn(sp, level, itemstack, hand,
+                return sp.gameMode.useItemOn(sp, level, itemstack, hand,
                         new BlockHitResult(Vec3.atCenterOf(p), this.direction, p, false));
-                return interactionresult;
             } else {
                 return InteractionResult.SUCCESS;
             }
@@ -548,7 +535,7 @@ public class LabelEntity extends Entity {
     }
 
     @Nullable
-    public ResourceLocation getTextureId() {
+    public Identifier getTextureId() {
         return textureId;
     }
 
